@@ -5,20 +5,39 @@ import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [sessionName, setSessionName] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const createSession = () => {
-    if (!sessionName.trim()) return;
-    
-    // Generate a slug from the session name
-    const slug = sessionName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-    
-    // TODO: Create session in the backend
-    // For now, we'll just redirect to a placeholder URL
-    router.push(`/session/${slug}`);
+  const createSession = async () => {
+    if (!sessionName.trim() || isLoading) return;
+
+    try {
+      setIsLoading(true);
+
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: sessionName,
+          password: password,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create session');
+      }
+
+      const { session } = await response.json();
+      router.push(`/session/${session.slug}`);
+    } catch (error) {
+      console.error('Error creating session:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -29,7 +48,7 @@ export default function Home() {
           <p className="text-lg text-content-secondary mb-12">
             Anonymous voting made simple
           </p>
-          
+
           <div className="form-control w-full max-w-md">
             <div className="flex flex-col gap-4">
               <input
@@ -40,12 +59,19 @@ export default function Home() {
                 className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
                 onKeyDown={(e) => e.key === 'Enter' && createSession()}
               />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
+              />
               <button
                 className="btn border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
                 onClick={createSession}
-                disabled={!sessionName.trim()}
+                disabled={!sessionName.trim() || isLoading}
               >
-                Create Session
+                {isLoading ? 'Creating...' : 'Create Session'}
               </button>
             </div>
           </div>
