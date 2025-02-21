@@ -1,23 +1,27 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { sessions } from '@/db/schema';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
     const { name, password } = await request.json();
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     const slug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-    // Create session
     const [session] = await db
       .insert(sessions)
       .values({
         name,
         slug,
-        hashedPassword: password,
+        hashedPassword,
+        state: 'initiated',
       })
       .returning();
 
