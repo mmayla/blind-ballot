@@ -22,39 +22,45 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8">
-      <main className="max-w-md w-full space-y-8 text-center">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">BlindBallot</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Anonymous voting made simple
+    <div className="hero min-h-screen bg-base-100">
+      <div className="hero-content text-center">
+        <div className="max-w-md">
+          <h1 className="text-5xl font-bold text-primary">BlindBallot</h1>
+          <p className="py-6 text-lg">
+            Anonymous voting made simple and secure
+          </p>
+          
+          <div className="form-control w-full max-w-md">
+            <div className="input-group">
+              <input
+                type="text"
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                placeholder="Enter session name"
+                className="input input-bordered w-full"
+                onKeyDown={(e) => e.key === 'Enter' && createSession()}
+              />
+              <button
+                className="btn btn-primary mt-5"
+                onClick={createSession}
+                disabled={!sessionName.trim()}
+              >
+                Create Session
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <div className="badge badge-outline">Secure</div>
+            <div className="badge badge-outline ml-2">Anonymous</div>
+            <div className="badge badge-outline ml-2">Simple</div>
+          </div>
+
+          <p className="mt-8 text-sm opacity-75">
+            Create a secure voting session where participants can anonymously vote for their preferred collaborators.
           </p>
         </div>
-
-        <div className="mt-8 space-y-4">
-          <div>
-            <input
-              type="text"
-              value={sessionName}
-              onChange={(e) => setSessionName(e.target.value)}
-              placeholder="Enter session name"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              onKeyDown={(e) => e.key === 'Enter' && createSession()}
-            />
-          </div>
-          <button
-            onClick={createSession}
-            disabled={!sessionName.trim()}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-          >
-            Create Voting Session
-          </button>
-        </div>
-
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-8">
-          Create a secure voting session where participants can anonymously vote for their preferred collaborators.
-        </p>
-      </main>
+      </div>
     </div>
   );
 }
