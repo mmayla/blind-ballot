@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { getStoredToken, storeToken, removeToken } from '@/lib/auth';
 
 interface Option {
   id?: number;
@@ -18,6 +19,53 @@ export default function AdminPage() {
   const [isVerified, setIsVerified] = useState(false);
   const [password, setPassword] = useState('');
   const [authToken, setAuthToken] = useState('');
+
+  useEffect(() => {
+    const storedToken = getStoredToken(slug as string);
+    if (storedToken) {
+      verifyWithToken(storedToken);
+    }
+  }, [slug]);
+
+  const verifyWithToken = async (token: string) => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const sessionResponse = await fetch(`/api/sessions/${slug}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!sessionResponse.ok) {
+        throw new Error('Invalid token');
+      }
+
+      const sessionData = await sessionResponse.json();
+      setSessionState(sessionData.session.state);
+      setAuthToken(token);
+      setIsVerified(true);
+
+      if (sessionData.session.state === 'configured') {
+        const optionsResponse = await fetch(`/api/sessions/${slug}/options`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (optionsResponse.ok) {
+          const optionsData = await optionsResponse.json();
+          setOptions(optionsData.options);
+        }
+      }
+    } catch (error) {
+      console.error('Error verifying token:', error);
+      removeToken(slug as string);
+      setError('');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const verifyPassword = async () => {
     if (!password.trim() || isLoading) return;
@@ -43,10 +91,12 @@ export default function AdminPage() {
       setAuthToken(data.jwtToken);
       setIsVerified(true);
 
+      storeToken(slug as string, data.jwtToken);
+
       if (data.session.state === 'configured') {
         const optionsResponse = await fetch(`/api/sessions/${slug}/options`, {
           headers: {
-            'Authorization': `Bearer ${data.token}`,
+            'Authorization': `Bearer ${data.jwtToken}`,
           },
         });
         if (optionsResponse.ok) {
@@ -113,6 +163,16 @@ export default function AdminPage() {
       setIsLoading(false);
     }
   };
+
+  if (isLoading && !isVerified) {
+    return (
+      <div className="min-h-screen bg-surface-primary p-8">
+        <div className="max-w-md mx-auto text-center">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+      </div>
+    );
+  }
 
   if (!isVerified) {
     return (
