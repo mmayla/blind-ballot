@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import bcrypt from 'bcryptjs';
+import { signAdminJwt } from '@/lib/jwt';
 
 export async function POST(
   request: Request,
@@ -23,13 +24,19 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
     }
 
+    const jwtToken = signAdminJwt({
+      sessionId: session.id,
+      sessionSlug: session.slug,
+    });
+
     return NextResponse.json({
       session: {
         id: session.id,
         slug: session.slug,
         name: session.name,
         state: session.state,
-      }
+      },
+      jwtToken,
     });
   } catch (error) {
     console.error('Failed to verify session:', error);

@@ -17,6 +17,7 @@ export default function AdminPage() {
   const [sessionState, setSessionState] = useState<'initiated' | 'configured' | 'finished'>('initiated');
   const [isVerified, setIsVerified] = useState(false);
   const [password, setPassword] = useState('');
+  const [authToken, setAuthToken] = useState('');
 
   const verifyPassword = async () => {
     if (!password.trim() || isLoading) return;
@@ -39,10 +40,15 @@ export default function AdminPage() {
 
       const data = await response.json();
       setSessionState(data.session.state);
+      setAuthToken(data.jwtToken);
       setIsVerified(true);
 
       if (data.session.state === 'configured') {
-        const optionsResponse = await fetch(`/api/sessions/${slug}/options`);
+        const optionsResponse = await fetch(`/api/sessions/${slug}/options`, {
+          headers: {
+            'Authorization': `Bearer ${data.token}`,
+          },
+        });
         if (optionsResponse.ok) {
           const optionsData = await optionsResponse.json();
           setOptions(optionsData.options);
@@ -87,6 +93,7 @@ export default function AdminPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           options: validOptions,

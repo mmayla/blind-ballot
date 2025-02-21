@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { sessions, options } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { verifyAdmin } from '@/middleware/auth';
 
 export async function GET(
   request: Request,
@@ -35,6 +36,9 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
+    const authError = await verifyAdmin(request, params.slug);
+    if (authError) return authError;
+
     const { options: newOptions } = await request.json();
 
     const session = await db.query.sessions.findFirst({
