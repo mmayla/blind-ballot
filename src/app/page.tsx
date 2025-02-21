@@ -22,11 +22,11 @@ export default function Home() {
   };
 
   return (
-    <div className="hero min-h-screen bg-base-100">
+    <div className="hero min-h-screen bg-surface-primary">
       <div className="hero-content text-center">
         <div className="max-w-md">
-          <h1 className="text-5xl font-bold text-white mb-2">BlindBallot</h1>
-          <p className="text-lg text-gray-300 mb-12">
+          <h1 className="text-5xl font-bold text-content-primary mb-2">BlindBallot</h1>
+          <p className="text-lg text-content-secondary mb-12">
             Anonymous voting made simple
           </p>
           
@@ -37,11 +37,11 @@ export default function Home() {
                 value={sessionName}
                 onChange={(e) => setSessionName(e.target.value)}
                 placeholder="Enter session name"
-                className="input input-bordered w-full bg-base-200 text-white border-base-300 focus:border-white"
+                className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
                 onKeyDown={(e) => e.key === 'Enter' && createSession()}
               />
               <button
-                className="btn border-2 border-white text-white hover:bg-white hover:text-black transition-colors"
+                className="btn border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
                 onClick={createSession}
                 disabled={!sessionName.trim()}
               >
@@ -51,12 +51,12 @@ export default function Home() {
           </div>
 
           <div className="mt-12">
-            <div className="badge badge-outline border-white text-white">Secure</div>
-            <div className="badge badge-outline border-white text-white ml-2">Anonymous</div>
-            <div className="badge badge-outline border-white text-white ml-2">Simple</div>
+            <div className="badge badge-outline border-border-primary text-content-primary">Secure</div>
+            <div className="badge badge-outline border-border-primary text-content-primary ml-2">Anonymous</div>
+            <div className="badge badge-outline border-border-primary text-content-primary ml-2">Simple</div>
           </div>
 
-          <p className="mt-8 text-sm text-gray-400">
+          <p className="mt-8 text-sm text-content-muted">
             Create a secure voting session where participants can anonymously vote for their preferred collaborators.
           </p>
         </div>
