@@ -31,7 +31,7 @@ export default function Home() {
       }
 
       const { session } = await response.json();
-      router.push(`/session/${session.slug}`);
+      router.push(`/session/${session.slug}/admin`);
     } catch (error) {
       console.error('Error creating session:', error);
       // You might want to show an error message to the user here
