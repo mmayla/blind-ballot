@@ -11,6 +11,7 @@ export default function Home() {
 
   const createSession = async () => {
     if (!sessionName.trim() || isLoading) return;
+    if (!password.trim()) throw new Error("Password is required");
 
     try {
       setIsLoading(true);
@@ -69,7 +70,7 @@ export default function Home() {
               <button
                 className="btn border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
                 onClick={createSession}
-                disabled={!sessionName.trim() || isLoading}
+                disabled={!sessionName.trim() || !password.trim() || isLoading}
               >
                 {isLoading ? 'Creating...' : 'Create Session'}
               </button>
