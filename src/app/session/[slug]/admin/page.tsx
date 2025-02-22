@@ -391,7 +391,7 @@ export default function AdminPage() {
                 {sessionState === "configured" && (
                   <button
                     onClick={closeVoting}
-                    className="btn btn-primary"
+                    className="btn w-full text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Closing...' : 'Close Voting & Show Results'}

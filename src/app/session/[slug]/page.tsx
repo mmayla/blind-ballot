@@ -224,7 +224,7 @@ export default function SessionPage() {
           ))}
           <button
             onClick={submitVote}
-            className="btn btn-primary w-full mt-4"
+            className="btn w-full mt-4 text-content-primary hover:bg-content-primary hover:text-surface-primary transition-color"
             disabled={selectedOptions.size < 2 || isLoading}
           >
             {isLoading ? 'Submitting...' : 'Submit Vote'}
