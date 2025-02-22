@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 
 interface Option {
@@ -8,15 +8,50 @@ interface Option {
   label: string;
 }
 
+interface Result {
+  optionId: number;
+  label: string;
+  voteCount: number;
+}
+
 export default function SessionPage() {
   const { slug } = useParams();
   const [token, setToken] = useState('');
   const [options, setOptions] = useState<Option[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<Set<number>>(new Set());
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [isVerified, setIsVerified] = useState(false);
   const [isVoted, setIsVoted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [results, setResults] = useState<Result[]>([]);
+  const [sessionState, setSessionState] = useState<'initiated' | 'configured' | 'finished'>('initiated');
+
+  useEffect(() => {
+    const checkSessionStatus = async () => {
+      try {
+        // First try to get session results
+        const resultsResponse = await fetch(`/api/sessions/${slug}/results`);
+        if (resultsResponse.ok) {
+          const data = await resultsResponse.json();
+          setResults(data.results || []);
+          setSessionState('finished');
+          return;
+        }
+
+        // If not finished, try to get options
+        const optionsResponse = await fetch(`/api/sessions/${slug}/options`);
+        if (optionsResponse.ok) {
+          const data = await optionsResponse.json();
+          setOptions(data.options || []);
+          setSessionState('configured');
+        }
+      } catch (error) {
+        console.error('Error checking session status:', error);
+      }
+    };
+
+    checkSessionStatus();
+  }, [slug]);
 
   const verifyToken = async () => {
     if (!token.trim() || isLoading) return;
@@ -38,8 +73,11 @@ export default function SessionPage() {
       }
 
       const data = await response.json();
-      setOptions(data.options);
-      setIsVerified(true);
+      if (data.valid) {
+        setIsVerified(true);
+      } else {
+        throw new Error('Invalid token');
+      }
     } catch (error) {
       console.error('Error verifying token:', error);
       setError('Invalid or already used token');
@@ -77,7 +115,7 @@ export default function SessionPage() {
       });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        throw new Error('Failed to submit vote');
       }
 
       setIsVoted(true);
@@ -89,86 +127,84 @@ export default function SessionPage() {
     }
   };
 
+  if (sessionState === 'finished') {
+    return (
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Voting Results</h1>
+        <div className="space-y-4">
+          {results && results.map((result) => (
+            <div key={result.optionId} className="p-4 bg-surface-secondary rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">{result.label}</span>
+                <span className="text-sm">{result.voteCount} votes</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (isVoted) {
     return (
-      <div className="min-h-screen bg-surface-primary p-8">
-        <div className="max-w-md mx-auto">
-          <div className="bg-surface-secondary p-6 rounded-lg border border-border-secondary text-center">
-            <h1 className="text-2xl font-bold text-content-primary mb-4">Thank You!</h1>
-            <p className="text-content-secondary">Your vote has been recorded successfully.</p>
-          </div>
+      <div className="container mx-auto p-4">
+        <div className="bg-green-100 text-green-800 p-4 rounded-lg">
+          Your vote has been submitted successfully!
+        </div>
+      </div>
+    );
+  }
+
+  if (!isVerified) {
+    return (
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Enter Voting Token</h1>
+        {error && <div className="text-error mb-4">{error}</div>}
+        <div className="space-y-4">
+          <input
+            type="text"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Enter your token"
+            className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
+          />
+          <button
+            onClick={verifyToken}
+            className="btn w-full border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
+            disabled={!token.trim() || isLoading}
+          >
+            {isLoading ? 'Verifying...' : 'Verify Token'}
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary p-8">
-      <div className="max-w-md mx-auto">
-        <h1 className="text-4xl font-bold text-content-primary mb-6">Voting Session</h1>
-        <div className="bg-surface-secondary p-6 rounded-lg border border-border-secondary">
-          {error && (
-            <div className="text-error mb-4 p-4 bg-surface-elevated rounded-lg">
-              {error}
-            </div>
-          )}
-
-          {!isVerified ? (
-            <div className="form-control">
-              <input
-                type="text"
-                value={token}
-                onChange={(e) => setToken(e.target.value.toUpperCase())}
-                placeholder="Enter your voting token"
-                className="input input-bordered w-full bg-surface-elevated text-content-primary border-border-secondary focus:border-border-primary mb-4"
-                onKeyDown={(e) => e.key === 'Enter' && verifyToken()}
-              />
-              <button
-                onClick={verifyToken}
-                disabled={!token.trim() || isLoading}
-                className="btn border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors w-full"
-              >
-                {isLoading ? 'Verifying...' : 'Continue to Vote'}
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="alert alert-warning mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <div>
-                  <h3 className="font-bold">Important!</h3>
-                  <div className="text-sm">
-                    - You must select at least 2 options<br />
-                    - Your vote cannot be changed after submission<br />
-                    - This token can only be used once
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-6">
-                {options.map((option) => (
-                  <label key={option.id} className="flex items-center gap-3 p-3 rounded-lg border border-border-secondary hover:bg-surface-elevated cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedOptions.has(option.id)}
-                      onChange={() => toggleOption(option.id)}
-                      className="checkbox"
-                    />
-                    <span className="text-content-primary">{option.label}</span>
-                  </label>
-                ))}
-              </div>
-
-              <button
-                onClick={submitVote}
-                disabled={isLoading || selectedOptions.size < 2}
-                className="btn border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors w-full"
-              >
-                {isLoading ? 'Submitting...' : 'Submit Vote'}
-              </button>
-            </>
-          )}
-        </div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Select Options</h1>
+      {error && <div className="text-error mb-4">{error}</div>}
+      <div className="space-y-4">
+        {options.map((option) => (
+          <div
+            key={option.id}
+            onClick={() => toggleOption(option.id)}
+            className={`p-4 rounded-lg cursor-pointer transition-colors ${
+              selectedOptions.has(option.id)
+                ? 'bg-content-primary text-surface-primary'
+                : 'bg-surface-secondary hover:bg-surface-elevated'
+            }`}
+          >
+            {option.label}
+          </div>
+        ))}
+        <button
+          onClick={submitVote}
+          className="btn w-full mt-4"
+          disabled={selectedOptions.size < 2 || isLoading}
+        >
+          {isLoading ? 'Submitting...' : 'Submit Vote'}
+        </button>
       </div>
     </div>
   );

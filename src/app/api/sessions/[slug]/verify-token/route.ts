@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
+import { sessions, tokens } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 export async function POST(request: NextRequest, props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
@@ -9,38 +11,40 @@ export async function POST(request: NextRequest, props: { params: Promise<{ slug
     const { token } = await request.json();
 
     const session = await db.query.sessions.findFirst({
-      where: (sessions, { eq }) => eq(sessions.slug, slug)
+      where: eq(sessions.slug, slug)
     });
 
     if (!session) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
-
-    if (session.state !== 'configured') {
       return NextResponse.json(
-        { error: 'Session is not in voting state' },
-        { status: 400 }
+        { error: 'Session not found' },
+        { status: 404 }
       );
     }
 
-    const votingToken = await db.query.tokens.findFirst({
-      where: (tokens, { eq }) => eq(tokens.token, token)
+    if (session.state === 'finished') {
+      return NextResponse.json(
+        { error: 'Voting is closed for this session' },
+        { status: 403 }
+      );
+    }
+
+    const tokenRecord = await db.query.tokens.findFirst({
+      where: and(
+        eq(tokens.token, token),
+        eq(tokens.used, 0)
+      )
     });
 
-    if (!votingToken || votingToken.sessionId !== session.id || votingToken.used) {
+    if (!tokenRecord) {
       return NextResponse.json(
         { error: 'Invalid or already used token' },
         { status: 400 }
       );
     }
 
-    const sessionOptions = await db.query.options.findMany({
-      where: (options, { eq }) => eq(options.sessionId, session.id)
-    });
-
-    return NextResponse.json({ options: sessionOptions });
+    return NextResponse.json({ valid: true });
   } catch (error) {
-    console.error('Failed to verify token:', error);
+    console.error('Error verifying token:', error);
     return NextResponse.json(
       { error: 'Failed to verify token' },
       { status: 500 }

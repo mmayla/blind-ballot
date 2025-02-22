@@ -20,13 +20,14 @@ export default function AdminPage() {
   const [options, setOptions] = useState<Option[]>([{ label: '' }]);
   const [numberOfVoters, setNumberOfVoters] = useState<number>(2);
   const [votingTokens, setVotingTokens] = useState<Token[]>([]);
+  const [password, setPassword] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [sessionState, setSessionState] = useState<'initiated' | 'configured' | 'finished'>('initiated');
-  const [isVerified, setIsVerified] = useState(false);
-  const [password, setPassword] = useState('');
   const [authToken, setAuthToken] = useState('');
+  const [sessionState, setSessionState] = useState<'initiated' | 'configured' | 'finished'>('initiated');
 
+  // Initial setup when component mounts
   useEffect(() => {
     const storedToken = getStoredToken(slug as string);
     if (storedToken) {
@@ -34,66 +35,77 @@ export default function AdminPage() {
     }
   }, [slug]);
 
+  // Fetch session data whenever auth state changes
   useEffect(() => {
-    const fetchTokens = async () => {
-      if (sessionState === 'configured' && authToken) {
-        try {
-          const response = await fetch(`/api/sessions/${slug}/tokens`, {
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-            },
-          });
+    if (authToken) {
+      fetchSessionData();
+    }
+  }, [authToken, slug]);
 
-          if (response.ok) {
-            const data = await response.json();
-            setVotingTokens(data.tokens);
-          }
-        } catch (error) {
-          console.error('Failed to fetch tokens:', error);
-        }
-      }
-    };
-
-    fetchTokens();
-  }, [sessionState, authToken, slug]);
-
-  const verifyWithToken = async (token: string) => {
-    setIsLoading(true);
-    setError('');
-
+  const fetchSessionData = async () => {
     try {
       const sessionResponse = await fetch(`/api/sessions/${slug}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+          'Authorization': `Bearer ${authToken}`
+        }
       });
 
       if (!sessionResponse.ok) {
-        throw new Error('Invalid token');
+        throw new Error('Failed to fetch session data');
       }
 
       const sessionData = await sessionResponse.json();
       setSessionState(sessionData.session.state);
-      setAuthToken(token);
-      setIsVerified(true);
 
-      if (sessionData.session.state === 'configured') {
+      if (sessionData.session.state !== 'initiated') {
         const optionsResponse = await fetch(`/api/sessions/${slug}/options`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${authToken}`,
           },
         });
+
         if (optionsResponse.ok) {
-          const optionsData = await optionsResponse.json();
-          setOptions(optionsData.options);
+          const data = await optionsResponse.json();
+          setOptions(data.options);
+        }
+
+        const tokensResponse = await fetch(`/api/sessions/${slug}/tokens`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+        });
+
+        if (tokensResponse.ok) {
+          const data = await tokensResponse.json();
+          setVotingTokens(data.tokens);
         }
       }
     } catch (error) {
+      console.error('Error fetching session data:', error);
+      setError('Failed to fetch session data');
+    }
+  };
+
+  const verifyWithToken = async (token: string) => {
+    try {
+      // First verify if the token is still valid by trying to fetch session data
+      const sessionResponse = await fetch(`/api/sessions/${slug}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!sessionResponse.ok) {
+        removeToken(slug as string);
+        return;
+      }
+
+      setAuthToken(token);
+      setIsVerified(true);
+      storeToken(slug as string, token);
+    } catch (error) {
       console.error('Error verifying token:', error);
       removeToken(slug as string);
-      setError('');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -117,23 +129,9 @@ export default function AdminPage() {
       }
 
       const data = await response.json();
-      setSessionState(data.session.state);
       setAuthToken(data.jwtToken);
       setIsVerified(true);
-
       storeToken(slug as string, data.jwtToken);
-
-      if (data.session.state === 'configured') {
-        const optionsResponse = await fetch(`/api/sessions/${slug}/options`, {
-          headers: {
-            'Authorization': `Bearer ${data.jwtToken}`,
-          },
-        });
-        if (optionsResponse.ok) {
-          const optionsData = await optionsResponse.json();
-          setOptions(optionsData.options);
-        }
-      }
     } catch (error) {
       console.error('Error verifying password:', error);
       setError('Invalid password');
@@ -150,15 +148,13 @@ export default function AdminPage() {
     setOptions(options.filter((_, i) => i !== index));
   };
 
-  const updateOption = (index: number, label: string) => {
+  const updateOption = (index: number, value: string) => {
     const newOptions = [...options];
-    newOptions[index] = { ...newOptions[index], label };
+    newOptions[index] = { ...newOptions[index], label: value };
     setOptions(newOptions);
   };
 
   const saveOptions = async () => {
-    if (isLoading) return;
-
     const validOptions = options.filter(opt => opt.label.trim());
     if (validOptions.length < 2) {
       setError('Please add at least 2 valid options');
@@ -191,13 +187,38 @@ export default function AdminPage() {
       }
 
       const data = await response.json();
-      setOptions(data.options);
       setVotingTokens(data.tokens);
       setSessionState('configured');
       router.refresh();
     } catch (error) {
       console.error('Error saving options:', error);
       setError('Failed to save options');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const closeVoting = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/sessions/${slug}/close`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to close voting');
+      }
+
+      router.push(`/session/${slug}`);
+    } catch (error) {
+      console.error('Error closing voting:', error);
+      setError('Failed to close voting');
     } finally {
       setIsLoading(false);
     }
@@ -214,8 +235,8 @@ export default function AdminPage() {
   if (isLoading && !isVerified) {
     return (
       <div className="min-h-screen bg-surface-primary p-8">
-        <div className="max-w-md mx-auto text-center">
-          <span className="loading loading-spinner loading-lg"></span>
+        <div className="flex justify-center items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-content-primary"></div>
         </div>
       </div>
     );
@@ -225,73 +246,23 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-surface-primary p-8">
         <div className="max-w-md mx-auto">
-          <h1 className="text-4xl font-bold text-content-primary mb-6">Admin Access</h1>
-          <div className="bg-surface-secondary p-6 rounded-lg border border-border-secondary">
-            {error && (
-              <div className="text-error mb-4 p-4 bg-surface-elevated rounded-lg">
-                {error}
-              </div>
-            )}
-
-            <div className="form-control">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter session password"
-                className="input input-bordered w-full bg-surface-elevated text-content-primary border-border-secondary focus:border-border-primary mb-4"
-                onKeyDown={(e) => e.key === 'Enter' && verifyPassword()}
-              />
-              <button
-                onClick={verifyPassword}
-                disabled={!password.trim() || isLoading}
-                className="btn border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors w-full"
-              >
-                {isLoading ? 'Verifying...' : 'Access Admin Panel'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (sessionState === 'configured') {
-    return (
-      <div className="min-h-screen bg-surface-primary p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-content-primary mb-6">Session Configuration</h1>
-          <div className="bg-surface-secondary p-6 rounded-lg border border-border-secondary">
-            <p className="text-content-primary mb-4">
-              This session has been configured and is ready for voting.
-            </p>
-            <h2 className="text-xl font-semibold text-content-primary mb-4">Options:</h2>
-            <ul className="list-disc list-inside text-content-secondary mb-8">
-              {options.map((option, index) => (
-                <li key={index} className="mb-2">{option.label}</li>
-              ))}
-            </ul>
-
-            <h2 className="text-xl font-semibold text-content-primary mb-4">Voting Tokens:</h2>
-            <div className="grid gap-4">
-              {votingTokens.map((token, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-surface-elevated rounded-lg border border-border-secondary">
-                  <div className="flex items-center gap-4">
-                    <span className="font-mono text-content-primary">{token.token}</span>
-                    <span className={`px-2 py-1 rounded text-sm ${token.used ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                      {token.used ? 'Used' : 'Available'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(token.token)}
-                    className="btn btn-sm btn-outline"
-                    disabled={token.used}
-                  >
-                    Copy
-                  </button>
-                </div>
-              ))}
-            </div>
+          <h1 className="text-2xl font-bold mb-4">Verify Password</h1>
+          {error && <div className="text-error mb-4">{error}</div>}
+          <div className="space-y-4">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
+              className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
+            />
+            <button
+              onClick={verifyPassword}
+              className="btn w-full border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
+              disabled={!password.trim() || isLoading}
+            >
+              {isLoading ? 'Verifying...' : 'Verify'}
+            </button>
           </div>
         </div>
       </div>
@@ -301,66 +272,115 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-surface-primary p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-content-primary mb-6">Configure Session</h1>
-        <div className="bg-surface-secondary p-6 rounded-lg border border-border-secondary">
-          {error && (
-            <div className="text-error mb-4 p-4 bg-surface-elevated rounded-lg">
-              {error}
-            </div>
-          )}
+        <h1 className="text-2xl font-bold mb-4">Session Admin</h1>
+        {error && <div className="text-error mb-4">{error}</div>}
 
-          <div className="space-y-4">
-            <div className="mb-6">
-              <label className="block text-content-primary mb-2">Number of Voters</label>
-              <input
-                type="number"
-                min="2"
-                value={numberOfVoters}
-                onChange={(e) => setNumberOfVoters(Math.max(2, parseInt(e.target.value) || 2))}
-                className="input input-bordered w-full bg-surface-elevated text-content-primary border-border-secondary focus:border-border-primary"
-              />
-            </div>
-
-            {options.map((option, index) => (
-              <div key={index} className="flex gap-4">
-                <input
-                  type="text"
-                  value={option.label}
-                  onChange={(e) => updateOption(index, e.target.value)}
-                  placeholder={`Option ${index + 1}`}
-                  className="input input-bordered flex-1 bg-surface-elevated text-content-primary border-border-secondary focus:border-border-primary"
-                />
-                <button
-                  onClick={() => removeOption(index)}
-                  className="btn btn-square btn-outline border-border-secondary text-content-secondary hover:bg-surface-elevated"
-                  disabled={options.length <= 1}
-                >
-                  ×
+        <div className="space-y-6">
+          {sessionState === 'initiated' ? (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold mb-4">Configure Options</h2>
+                <div className="space-y-2">
+                  {options.map((option, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={option.label}
+                        onChange={(e) => updateOption(index, e.target.value)}
+                        placeholder={`Option ${index + 1}`}
+                        className="input input-bordered flex-1 bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
+                      />
+                      <button
+                        onClick={() => removeOption(index)}
+                        className="btn btn-square btn-error"
+                        disabled={options.length <= 1}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={addOption} className="btn btn-outline mt-2">
+                  Add Option
                 </button>
               </div>
-            ))}
-          </div>
 
-          <div className="mt-6 flex gap-4">
-            <button
-              onClick={addOption}
-              className="btn btn-outline border-border-primary text-content-primary"
-            >
-              Add Option
-            </button>
-            <button
-              onClick={saveOptions}
-              disabled={isLoading || options.filter(opt => opt.label.trim()).length < 2}
-              className="btn border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
-            >
-              {isLoading ? 'Saving...' : 'Save Configuration'}
-            </button>
-          </div>
+              <div>
+                <h2 className="text-xl font-bold mb-2">Number of Voters</h2>
+                <input
+                  type="number"
+                  min="2"
+                  value={numberOfVoters}
+                  onChange={(e) => setNumberOfVoters(parseInt(e.target.value) || 2)}
+                  className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
+                />
+              </div>
 
-          <div className="alert alert-warning mt-6">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-            <span>Warning: After saving the configuration, you will not be able to modify the ballot options or number of voters.</span>
-          </div>
+              <button
+                onClick={saveOptions}
+                className="btn w-full border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Saving...' : 'Save Configuration'}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div>
+                <h2 className="text-xl font-bold mb-4">Options</h2>
+                <div className="space-y-2">
+                  {options.map((option, index) => (
+                    <div key={index} className="p-4 bg-surface-secondary rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{option.label}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold mb-4">Voting Tokens</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {votingTokens.map((token, index) => (
+                    <div
+                      key={index}
+                      className="p-4 bg-surface-secondary rounded-lg flex justify-between items-center"
+                    >
+                      <span className="font-mono">{token.token}</span>
+                      <button
+                        onClick={() => copyToClipboard(token.token)}
+                        className="btn btn-sm"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center mt-7">
+                {sessionState === "configured" && (
+                  <button
+                    onClick={closeVoting}
+                    className="btn btn-error"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Closing...' : 'Close Voting & Show Results'}
+                  </button>
+                )}
+
+                {sessionState === 'finished' && (
+                  <button
+                    onClick={() => router.push(`/session/${slug}`)}
+                    className="btn btn-primary"
+                  >
+                    View Results
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
