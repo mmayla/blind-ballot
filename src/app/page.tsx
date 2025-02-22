@@ -68,7 +68,7 @@ export default function Home() {
                 className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
               />
               <button
-                className="btn border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
+                className="btn text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
                 onClick={createSession}
                 disabled={!sessionName.trim() || !password.trim() || isLoading}
               >

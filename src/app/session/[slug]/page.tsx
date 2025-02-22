@@ -188,7 +188,7 @@ export default function SessionPage() {
           />
           <button
             onClick={verifyToken}
-            className="btn w-full border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
+            className="btn w-full text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
             disabled={!token.trim() || isLoading}
           >
             {isLoading ? 'Verifying...' : 'Verify Token'}
@@ -207,11 +207,10 @@ export default function SessionPage() {
           <div
             key={option.id}
             onClick={() => toggleOption(option.id)}
-            className={`p-4 rounded-lg cursor-pointer transition-colors ${
-              selectedOptions.has(option.id)
+            className={`p-4 rounded-lg cursor-pointer transition-colors ${selectedOptions.has(option.id)
                 ? 'bg-content-primary text-surface-primary'
                 : 'bg-surface-secondary hover:bg-surface-elevated'
-            }`}
+              }`}
           >
             {option.label}
           </div>

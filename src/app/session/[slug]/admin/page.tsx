@@ -258,7 +258,7 @@ export default function AdminPage() {
             />
             <button
               onClick={verifyPassword}
-              className="btn w-full border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
+              className="btn w-full text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
               disabled={!password.trim() || isLoading}
             >
               {isLoading ? 'Verifying...' : 'Verify'}
