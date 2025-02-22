@@ -9,10 +9,17 @@ interface Option {
   label: string;
 }
 
+interface Token {
+  token: string;
+  used: boolean;
+}
+
 export default function AdminPage() {
   const { slug } = useParams();
   const router = useRouter();
   const [options, setOptions] = useState<Option[]>([{ label: '' }]);
+  const [numberOfVoters, setNumberOfVoters] = useState<number>(2);
+  const [votingTokens, setVotingTokens] = useState<Token[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [sessionState, setSessionState] = useState<'initiated' | 'configured' | 'finished'>('initiated');
@@ -26,6 +33,29 @@ export default function AdminPage() {
       verifyWithToken(storedToken);
     }
   }, [slug]);
+
+  useEffect(() => {
+    const fetchTokens = async () => {
+      if (sessionState === 'configured' && authToken) {
+        try {
+          const response = await fetch(`/api/sessions/${slug}/tokens`, {
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setVotingTokens(data.tokens);
+          }
+        } catch (error) {
+          console.error('Failed to fetch tokens:', error);
+        }
+      }
+    };
+
+    fetchTokens();
+  }, [sessionState, authToken, slug]);
 
   const verifyWithToken = async (token: string) => {
     setIsLoading(true);
@@ -135,6 +165,11 @@ export default function AdminPage() {
       return;
     }
 
+    if (numberOfVoters < 2) {
+      setError('Number of voters must be at least 2');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
@@ -147,6 +182,7 @@ export default function AdminPage() {
         },
         body: JSON.stringify({
           options: validOptions,
+          numberOfVoters,
         }),
       });
 
@@ -154,6 +190,9 @@ export default function AdminPage() {
         throw new Error('Failed to save options');
       }
 
+      const data = await response.json();
+      setOptions(data.options);
+      setVotingTokens(data.tokens);
       setSessionState('configured');
       router.refresh();
     } catch (error) {
@@ -161,6 +200,14 @@ export default function AdminPage() {
       setError('Failed to save options');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
     }
   };
 
@@ -219,11 +266,32 @@ export default function AdminPage() {
               This session has been configured and is ready for voting.
             </p>
             <h2 className="text-xl font-semibold text-content-primary mb-4">Options:</h2>
-            <ul className="list-disc list-inside text-content-secondary">
+            <ul className="list-disc list-inside text-content-secondary mb-8">
               {options.map((option, index) => (
                 <li key={index} className="mb-2">{option.label}</li>
               ))}
             </ul>
+
+            <h2 className="text-xl font-semibold text-content-primary mb-4">Voting Tokens:</h2>
+            <div className="grid gap-4">
+              {votingTokens.map((token, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-surface-elevated rounded-lg border border-border-secondary">
+                  <div className="flex items-center gap-4">
+                    <span className="font-mono text-content-primary">{token.token}</span>
+                    <span className={`px-2 py-1 rounded text-sm ${token.used ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                      {token.used ? 'Used' : 'Available'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(token.token)}
+                    className="btn btn-sm btn-outline"
+                    disabled={token.used}
+                  >
+                    Copy
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -242,6 +310,17 @@ export default function AdminPage() {
           )}
 
           <div className="space-y-4">
+            <div className="mb-6">
+              <label className="block text-content-primary mb-2">Number of Voters</label>
+              <input
+                type="number"
+                min="2"
+                value={numberOfVoters}
+                onChange={(e) => setNumberOfVoters(Math.max(2, parseInt(e.target.value) || 2))}
+                className="input input-bordered w-full bg-surface-elevated text-content-primary border-border-secondary focus:border-border-primary"
+              />
+            </div>
+
             {options.map((option, index) => (
               <div key={index} className="flex gap-4">
                 <input
@@ -276,6 +355,11 @@ export default function AdminPage() {
             >
               {isLoading ? 'Saving...' : 'Save Configuration'}
             </button>
+          </div>
+
+          <div className="alert alert-warning mt-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <span>Warning: After saving the configuration, you will not be able to modify the ballot options or number of voters.</span>
           </div>
         </div>
       </div>

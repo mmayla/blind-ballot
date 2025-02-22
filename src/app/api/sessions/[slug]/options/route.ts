@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { sessions, options } from '@/db/schema';
+import { sessions, options, tokens } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyAdmin } from '@/middleware/auth';
+import { generateUniqueVotingTokens } from '@/lib/token';
 
 export async function GET(
   request: Request,
@@ -39,7 +40,14 @@ export async function POST(
     const authError = await verifyAdmin(request, params.slug);
     if (authError) return authError;
 
-    const { options: newOptions } = await request.json();
+    const { options: newOptions, numberOfVoters } = await request.json();
+
+    if (!numberOfVoters || numberOfVoters < 2) {
+      return NextResponse.json(
+        { error: 'Number of voters must be at least 2' },
+        { status: 400 }
+      );
+    }
 
     const session = await db.query.sessions.findFirst({
       where: (sessions, { eq }) => eq(sessions.slug, params.slug)
@@ -64,17 +72,35 @@ export async function POST(
         }))
       );
 
+      const votingTokens = generateUniqueVotingTokens(numberOfVoters);
+      await tx.insert(tokens).values(
+        votingTokens.map(token => ({
+          token,
+          sessionId: session.id,
+          used: 0
+        }))
+      );
+
       await tx
         .update(sessions)
         .set({ state: 'configured' })
         .where(eq(sessions.id, session.id));
 
-      return await tx.query.options.findMany({
+      const savedOptions = await tx.query.options.findMany({
         where: (options, { eq }) => eq(options.sessionId, session.id)
       });
+
+      const savedTokens = await tx.query.tokens.findMany({
+        where: (tokens, { eq }) => eq(tokens.sessionId, session.id)
+      });
+
+      return {
+        options: savedOptions,
+        tokens: savedTokens
+      };
     });
 
-    return NextResponse.json({ options: result });
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Failed to save options:', error);
     return NextResponse.json(
