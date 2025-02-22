@@ -132,14 +132,32 @@ export default function SessionPage() {
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Voting Results</h1>
         <div className="space-y-4">
-          {results && results.map((result) => (
-            <div key={result.optionId} className="p-4 bg-surface-secondary rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">{result.label}</span>
-                <span className="text-sm">{result.voteCount} votes</span>
-              </div>
-            </div>
-          ))}
+          {results && [...results]
+            .sort((a, b) => b.voteCount - a.voteCount)
+            .map((result) => {
+              const totalVotes = results.reduce((sum, r) => sum + r.voteCount, 0);
+              const percentage = totalVotes > 0 ? (result.voteCount / totalVotes) * 100 : 0;
+
+              return (
+                <div key={result.optionId} className="bg-surface-secondary rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium">{result.label}</span>
+                    <span className="text-sm text-content-secondary">
+                      {result.voteCount} vote{result.voteCount !== 1 ? 's' : ''} ({percentage.toFixed(1)}%)
+                    </span>
+                  </div>
+                  <div className="w-full bg-surface-elevated rounded-full h-2">
+                    <div
+                      className="bg-content-primary rounded-full h-2 transition-all duration-500"
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+        <div className="mt-4 text-sm text-content-secondary">
+          Total Votes: {results.reduce((sum, r) => sum + r.voteCount, 0)}
         </div>
       </div>
     );
