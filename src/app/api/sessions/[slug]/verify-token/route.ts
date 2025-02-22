@@ -1,15 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
+  const { slug } = params;
+
   try {
     const { token } = await request.json();
 
     const session = await db.query.sessions.findFirst({
-      where: (sessions, { eq }) => eq(sessions.slug, params.slug)
+      where: (sessions, { eq }) => eq(sessions.slug, slug)
     });
 
     if (!session) {

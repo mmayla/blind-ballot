@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { sessions, options, tokens } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -6,12 +6,14 @@ import { verifyAdmin } from '@/middleware/auth';
 import { generateUniqueVotingTokens } from '@/lib/token';
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
+  const { slug } = params;
+  
   try {
     const session = await db.query.sessions.findFirst({
-      where: (sessions, { eq }) => eq(sessions.slug, params.slug)
+      where: (sessions, { eq }) => eq(sessions.slug, slug)
     });
 
     if (!session) {
@@ -33,11 +35,13 @@ export async function GET(
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
+  const { slug } = params;
+
   try {
-    const authError = await verifyAdmin(request, params.slug);
+    const authError = await verifyAdmin(request, slug);
     if (authError) return authError;
 
     const { options: newOptions, numberOfVoters } = await request.json();
@@ -50,7 +54,7 @@ export async function POST(
     }
 
     const session = await db.query.sessions.findFirst({
-      where: (sessions, { eq }) => eq(sessions.slug, params.slug)
+      where: (sessions, { eq }) => eq(sessions.slug, slug)
     });
 
     if (!session) {
