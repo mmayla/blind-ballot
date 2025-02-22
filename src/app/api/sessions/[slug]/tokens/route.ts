@@ -2,10 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { verifyAdmin } from '@/middleware/auth';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { slug: string } }
-) {
+export async function GET(request: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   try {
     const authError = await verifyAdmin(request, params.slug);
     if (authError) return authError;

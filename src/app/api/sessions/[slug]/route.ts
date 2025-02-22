@@ -2,10 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { sessions } from '@/db/schema';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { slug: string } }
-) {
+export async function GET(request: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   try {
     const session = await db.query.sessions.findFirst({
       where: (sessions, { eq }) => eq(sessions.slug, params.slug)

@@ -5,12 +5,10 @@ import { eq } from 'drizzle-orm';
 import { verifyAdmin } from '@/middleware/auth';
 import { generateUniqueVotingTokens } from '@/lib/token';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const { slug } = params;
-  
+
   try {
     const session = await db.query.sessions.findFirst({
       where: (sessions, { eq }) => eq(sessions.slug, slug)
@@ -34,10 +32,8 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const { slug } = params;
 
   try {

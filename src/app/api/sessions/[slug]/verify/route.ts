@@ -3,10 +3,8 @@ import { db } from '@/db';
 import bcrypt from 'bcryptjs';
 import { signAdminJwt } from '@/lib/jwt';
 
-export async function POST(
-  request: Request,
-  { params }: { params: { slug: string } }
-) {
+export async function POST(request: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   try {
     const { password } = await request.json();
 

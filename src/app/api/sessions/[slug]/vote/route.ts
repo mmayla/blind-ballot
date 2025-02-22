@@ -3,10 +3,8 @@ import { db } from '@/db';
 import { tokens, voters, votes } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const { slug } = params;
 
   try {
