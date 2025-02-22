@@ -345,12 +345,19 @@ export default function AdminPage() {
                   {votingTokens.map((token, index) => (
                     <div
                       key={index}
-                      className="p-4 bg-surface-secondary rounded-lg flex justify-between items-center"
+                      className={"p-4 bg-surface-secondary rounded-lg flex justify-between items-center"}
                     >
-                      <span className="font-mono">{token.token}</span>
+                      <div className="flex flex-col">
+                        <span className="font-mono">{token.token}</span>
+                        <span className={`text-sm ${!token.used && 'text-green-500'}`}>
+                          {token.used ? 'Used' : 'Available'}
+                        </span>
+                      </div>
                       <button
                         onClick={() => copyToClipboard(token.token)}
                         className="btn btn-sm"
+                        disabled={token.used}
+                        title={token.used ? 'Token already used' : 'Copy token'}
                       >
                         Copy
                       </button>
