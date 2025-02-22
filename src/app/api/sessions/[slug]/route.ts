@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { sessions } from '@/db/schema';
 
 export async function GET(request: Request, props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;

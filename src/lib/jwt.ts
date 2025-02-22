@@ -18,6 +18,7 @@ export function verifyAdminJwt(token: string): AdminJwtPayload | null {
     if (decoded.role !== 'admin') return null;
     return decoded;
   } catch (error) {
+    console.log(error)
     return null;
   }
 }
