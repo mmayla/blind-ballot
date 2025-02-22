@@ -326,6 +326,27 @@ export default function AdminPage() {
             </div>
           ) : (
             <>
+              <div className="p-4 bg-surface-secondary rounded-lg">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-l font-bold">Voting Page</h2>
+                  <a
+                    href={`/session/${slug}`}
+                    className="text-xl font-bold text-content-primary hover:text-content-primary-hover underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {window.location.origin}/session/{slug}
+                  </a>
+                  <button
+                    onClick={() => copyToClipboard(`${window.location.origin}/session/${slug}`)}
+                    className="btn btn-square"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
               <div>
                 <h2 className="text-xl font-bold mb-4">Options</h2>
                 <div className="space-y-2">
@@ -366,11 +387,11 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="flex justify-between items-center mt-7">
+              <div className="flex justify-center">
                 {sessionState === "configured" && (
                   <button
                     onClick={closeVoting}
-                    className="btn btn-error"
+                    className="btn btn-primary"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Closing...' : 'Close Voting & Show Results'}
