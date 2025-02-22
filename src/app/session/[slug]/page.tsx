@@ -129,43 +129,46 @@ export default function SessionPage() {
 
   if (sessionState === 'finished') {
     return (
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Voting Results</h1>
-        <div className="space-y-4">
-          {results && [...results]
-            .sort((a, b) => b.voteCount - a.voteCount)
-            .map((result) => {
-              const totalVotes = results.reduce((sum, r) => sum + r.voteCount, 0);
-              const percentage = totalVotes > 0 ? (result.voteCount / totalVotes) * 100 : 0;
+      <div className="min-h-screen bg-surface-primary p-8">
+        <div className="max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-4">Voting Results</h1>
+          <div className="space-y-4">
+            {results && [...results]
+              .sort((a, b) => b.voteCount - a.voteCount)
+              .map((result) => {
+                const totalVotes = results.reduce((sum, r) => sum + r.voteCount, 0);
+                const percentage = totalVotes > 0 ? (result.voteCount / totalVotes) * 100 : 0;
 
-              return (
-                <div key={result.optionId} className="bg-surface-secondary rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">{result.label}</span>
-                    <span className="text-sm text-content-secondary">
-                      {result.voteCount} vote{result.voteCount !== 1 ? 's' : ''} ({percentage.toFixed(1)}%)
-                    </span>
+                return (
+                  <div key={result.optionId} className="bg-surface-secondary rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">{result.label}</span>
+                      <span className="text-sm text-content-secondary">
+                        {result.voteCount} vote{result.voteCount !== 1 ? 's' : ''} ({percentage.toFixed(1)}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-surface-elevated rounded-full h-2">
+                      <div
+                        className="bg-content-primary rounded-full h-2 transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-surface-elevated rounded-full h-2">
-                    <div
-                      className="bg-content-primary rounded-full h-2 transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+          </div>
+          <div className="mt-4 text-sm text-content-secondary">
+            Total Votes: {results.reduce((sum, r) => sum + r.voteCount, 0)}
+          </div>
         </div>
-        <div className="mt-4 text-sm text-content-secondary">
-          Total Votes: {results.reduce((sum, r) => sum + r.voteCount, 0)}
-        </div>
+
       </div>
     );
   }
 
   if (isVoted) {
     return (
-      <div className="container mx-auto p-4">
+      <div className="min-h-screen bg-surface-primary p-8">
         <div className="bg-green-100 text-green-800 p-4 rounded-lg">
           Your vote has been submitted successfully!
         </div>
@@ -175,54 +178,60 @@ export default function SessionPage() {
 
   if (!isVerified) {
     return (
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Enter Voting Token</h1>
-        {error && <div className="text-error mb-4">{error}</div>}
-        <div className="space-y-4">
-          <input
-            type="text"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="Enter your token"
-            className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
-          />
-          <button
-            onClick={verifyToken}
-            className="btn w-full text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
-            disabled={!token.trim() || isLoading}
-          >
-            {isLoading ? 'Verifying...' : 'Verify Token'}
-          </button>
+      <div className="min-h-screen bg-surface-primary p-8">
+        <div className="max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-4">Enter Voting Token</h1>
+          {error && <div className="text-error mb-4">{error}</div>}
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="Enter your token"
+              className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
+            />
+            <button
+              onClick={verifyToken}
+              className="btn w-full text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
+              disabled={!token.trim() || isLoading}
+            >
+              {isLoading ? 'Verifying...' : 'Verify Token'}
+            </button>
+          </div>
         </div>
+
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Select Options</h1>
-      {error && <div className="text-error mb-4">{error}</div>}
-      <div className="space-y-4">
-        {options.map((option) => (
-          <div
-            key={option.id}
-            onClick={() => toggleOption(option.id)}
-            className={`p-4 rounded-lg cursor-pointer transition-colors ${selectedOptions.has(option.id)
-                ? 'bg-content-primary text-surface-primary'
+    <div className="min-h-screen bg-surface-primary p-8">
+      <div className="max-w-md mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Select Options</h1>
+        {error && <div className="text-error mb-4">{error}</div>}
+        <div className="space-y-4">
+          {options.map((option) => (
+            <div
+              key={option.id}
+              onClick={() => toggleOption(option.id)}
+              className={`p-4 rounded-lg cursor-pointer transition-colors ${selectedOptions.has(option.id)
+                ? 'bg-[hsl(140,70%,40%)] text-surface-primary'
                 : 'bg-surface-secondary hover:bg-surface-elevated'
-              }`}
+                }`}
+            >
+              {option.label}
+            </div>
+          ))}
+          <button
+            onClick={submitVote}
+            className="btn btn-primary w-full mt-4"
+            disabled={selectedOptions.size < 2 || isLoading}
           >
-            {option.label}
-          </div>
-        ))}
-        <button
-          onClick={submitVote}
-          className="btn w-full mt-4"
-          disabled={selectedOptions.size < 2 || isLoading}
-        >
-          {isLoading ? 'Submitting...' : 'Submit Vote'}
-        </button>
+            {isLoading ? 'Submitting...' : 'Submit Vote'}
+          </button>
+        </div>
       </div>
+
     </div>
   );
 }
