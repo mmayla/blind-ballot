@@ -5,10 +5,14 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
-    const { name, password } = await request.json();
+    const { name, password, type } = await request.json();
 
     if (!password.trim()) {
       throw new Error('Password is required');
+    }
+
+    if (!type.trim()) {
+      throw new Error('session type is required');
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -26,6 +30,7 @@ export async function POST(request: Request) {
         slug,
         hashedPassword,
         state: 'initiated',
+        type,
       })
       .returning();
 
@@ -34,6 +39,8 @@ export async function POST(request: Request) {
         id: session.id,
         slug: session.slug,
         name: session.name,
+        type: session.type,
+        state: session.state,
       }
     }, { status: 201 });
   } catch (error) {

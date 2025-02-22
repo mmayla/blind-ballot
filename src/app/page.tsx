@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [sessionName, setSessionName] = useState('');
+  const [sessionType, setSessionType] = useState<'approval' | 'clique'>('approval');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function Home() {
   const createSession = async () => {
     if (!sessionName.trim() || isLoading) return;
     if (!password.trim()) throw new Error("Password is required");
+    if (!sessionType.trim()) throw new Error("Select session type");
 
     try {
       setIsLoading(true);
@@ -23,6 +25,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           name: sessionName,
+          type: sessionType,
           password: password,
         }),
       });
@@ -60,6 +63,15 @@ export default function Home() {
                 className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
                 onKeyDown={(e) => e.key === 'Enter' && createSession()}
               />
+              <select
+                value={sessionType}
+                onChange={(e) => setSessionType(e.target.value)}
+                className='select w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary'
+              >
+                <option disabled>Select session type</option>
+                <option value="approval">Approval Voting</option>
+                <option value="clique">Clique Voting</option>
+              </select>
               <input
                 type="password"
                 value={password}
