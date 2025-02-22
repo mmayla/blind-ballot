@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Blind Ballot 🎉
 
-## Getting Started
+Blind Ballot is a secure and user-friendly voting system designed to facilitate anonymous voting for various events, elections, or decision-making processes. This application allows users to create sessions, configure voting options, and manage tokens securely.
 
-First, run the development server:
+## Features 🚀
+- **Admin Dashboard**: Manage sessions and configure voting options with ease.
+- **Real-time Voting**: Users can cast their votes and view results after admin closes the voting session.
+- **Secure Authentication**: JWT tokens ensure secure access to the application.
+- **Responsive Design**: The application is designed to be user-friendly on both desktop and mobile devices.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Getting Started ⚙️
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+To run the development server, follow these steps:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Install Dependencies**:
+   Make sure you have [Node.js](https://nodejs.org/) installed. Then, navigate to your project directory and install the required dependencies:
+   ```bash
+   npm install
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Run the Development Server**:
+   Start the development server with the following command:
+   ```bash
+   npm run dev
+   ```
 
-## Learn More
+3. **Open in Browser**:
+   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-To learn more about Next.js, take a look at the following resources:
+## Learn More 📚
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+To learn more about the features and usage of Blind Ballot, check out the documentation or explore the codebase.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Contributing 🤝
 
-## Deploy on Vercel
+Contributions are welcome! If you have suggestions or improvements, feel free to submit a pull request.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License 📄
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the MIT License.
