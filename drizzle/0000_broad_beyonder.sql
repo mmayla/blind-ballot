@@ -1,3 +1,22 @@
+CREATE TABLE `clique_voters` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`name` text NOT NULL,
+	`token` text,
+	`session_id` integer,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (`token`) REFERENCES `tokens`(`token`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`session_id`) REFERENCES `sessions`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE TABLE `clique_votes` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`voter_id` integer,
+	`voter_choice_id` integer,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (`voter_id`) REFERENCES `clique_voters`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`voter_choice_id`) REFERENCES `clique_voters`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
 CREATE TABLE `options` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`session_id` integer,
@@ -11,7 +30,10 @@ CREATE TABLE `sessions` (
 	`name` text NOT NULL,
 	`slug` text NOT NULL,
 	`hashed_password` text NOT NULL,
+	`type` text DEFAULT 'approval',
 	`state` text DEFAULT 'initiated',
+	`minVotes` integer,
+	`maxVotes` integer,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP
 );
 --> statement-breakpoint

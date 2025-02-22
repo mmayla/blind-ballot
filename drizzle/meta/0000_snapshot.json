@@ -1,9 +1,148 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "bb7f94bd-cf70-429a-91eb-fb097be68a02",
+  "id": "5592acf1-4e7c-4543-8dd6-9a75c9e0045c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "clique_voters": {
+      "name": "clique_voters",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "clique_voters_token_tokens_token_fk": {
+          "name": "clique_voters_token_tokens_token_fk",
+          "tableFrom": "clique_voters",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token"
+          ],
+          "columnsTo": [
+            "token"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "clique_voters_session_id_sessions_id_fk": {
+          "name": "clique_voters_session_id_sessions_id_fk",
+          "tableFrom": "clique_voters",
+          "tableTo": "sessions",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "clique_votes": {
+      "name": "clique_votes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "voter_id": {
+          "name": "voter_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "voter_choice_id": {
+          "name": "voter_choice_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "clique_votes_voter_id_clique_voters_id_fk": {
+          "name": "clique_votes_voter_id_clique_voters_id_fk",
+          "tableFrom": "clique_votes",
+          "tableTo": "clique_voters",
+          "columnsFrom": [
+            "voter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "clique_votes_voter_choice_id_clique_voters_id_fk": {
+          "name": "clique_votes_voter_choice_id_clique_voters_id_fk",
+          "tableFrom": "clique_votes",
+          "tableTo": "clique_voters",
+          "columnsFrom": [
+            "voter_choice_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "options": {
       "name": "options",
       "columns": {
@@ -88,6 +227,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'approval'"
+        },
         "state": {
           "name": "state",
           "type": "text",
@@ -95,6 +242,20 @@
           "notNull": false,
           "autoincrement": false,
           "default": "'initiated'"
+        },
+        "minVotes": {
+          "name": "minVotes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "maxVotes": {
+          "name": "maxVotes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
