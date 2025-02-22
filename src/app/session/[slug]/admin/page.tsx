@@ -292,7 +292,7 @@ export default function AdminPage() {
                       />
                       <button
                         onClick={() => removeOption(index)}
-                        className="btn btn-square btn-error"
+                        className="btn btn-square"
                         disabled={options.length <= 1}
                       >
                         ×
@@ -300,7 +300,7 @@ export default function AdminPage() {
                     </div>
                   ))}
                 </div>
-                <button onClick={addOption} className="btn btn-outline mt-2">
+                <button onClick={addOption} className="btn mt-3">
                   Add Option
                 </button>
               </div>
@@ -318,7 +318,7 @@ export default function AdminPage() {
 
               <button
                 onClick={saveOptions}
-                className="btn w-full border-2 border-border-primary text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
+                className="btn w-full text-content-primary hover:bg-content-primary hover:text-surface-primary transition-colors"
                 disabled={isLoading}
               >
                 {isLoading ? 'Saving...' : 'Save Configuration'}
