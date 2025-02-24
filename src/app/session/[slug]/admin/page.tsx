@@ -224,14 +224,6 @@ export default function AdminPage() {
     }
   };
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  };
-
   if (isLoading && !isVerified) {
     return (
       <Box minH="100vh" py={20}>
@@ -258,7 +250,7 @@ export default function AdminPage() {
     <Box minH="100vh" py={8}>
       <Container maxW="4xl">
         <VStack align="stretch" gap={4}>
-          <Heading as="h1" size="lg">Session Admin</Heading>
+          <Heading as="h1" size="2xl">Session Admin</Heading>
 
           {error && (
             <Alert.Root status="error">
@@ -306,7 +298,6 @@ export default function AdminPage() {
 
               <TokenList
                 tokens={votingTokens}
-                onCopyToken={copyToClipboard}
               />
 
               <Box textAlign="center">
