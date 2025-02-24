@@ -6,8 +6,10 @@ import { eq } from "drizzle-orm";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { slug: string } }
+  props: { params: Promise<{ slug: string }> }
 ) {
+  const params = await props.params;
+
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -16,7 +18,7 @@ export async function POST(
 
     const token = authHeader.split(" ")[1];
     const decoded = verifyAdminJwt(token);
-    
+
     if (!decoded || decoded.sessionSlug !== params.slug) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
