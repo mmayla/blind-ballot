@@ -21,7 +21,6 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.8",
     "bcryptjs": "^3.0.2",
-    "daisyui": "^4.12.23",
     "drizzle-orm": "^0.39.3",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.475.0",
