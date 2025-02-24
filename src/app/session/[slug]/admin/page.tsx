@@ -9,6 +9,16 @@ import { TokenList } from './_components/TokenList';
 import { VoterCount } from './_components/VoterCount';
 import { AdminAuth } from './_components/AdminAuth';
 import { OptionsList } from './_components/OptionsList';
+import {
+  Box,
+  Container,
+  VStack,
+  Heading,
+  Button,
+  Spinner,
+  Center,
+  Alert,
+} from '@chakra-ui/react';
 
 interface Option {
   id?: number;
@@ -92,13 +102,14 @@ export default function AdminPage() {
 
   const verifyWithToken = async (token: string) => {
     try {
-      const sessionResponse = await fetch(`/api/sessions/${slug}`, {
+      const response = await fetch(`/api/sessions/${slug}/verify-admin`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (!sessionResponse.ok) {
+      if (!response.ok) {
         removeToken(slug as string);
         return;
       }
@@ -213,21 +224,13 @@ export default function AdminPage() {
     }
   };
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  };
-
   if (isLoading && !isVerified) {
     return (
-      <div className="min-h-screen bg-surface-primary p-8">
-        <div className="flex justify-center items-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-content-primary"></div>
-        </div>
-      </div>
+      <Box minH="100vh" py={20}>
+        <Center>
+          <Spinner size="xl" />
+        </Center>
+      </Box>
     );
   }
 
@@ -244,78 +247,88 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-primary p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Session Admin</h1>
-        {error && <div className="text-error mb-4">{error}</div>}
-        {sessionState === 'initiated' ? (
-          <div className="space-y-6">
-            <OptionsManager
-              options={options}
-              onUpdateOption={(index, value) => {
-                const newOptions = [...options];
-                newOptions[index] = { ...newOptions[index], label: value };
-                setOptions(newOptions);
-              }}
-              onAddOption={() => setOptions([...options, { label: '' }])}
-              onRemoveOption={(index) => setOptions(options.filter((_, i) => i !== index))}
-            />
+    <Box minH="100vh" py={8}>
+      <Container maxW="4xl">
+        <VStack align="stretch" gap={4}>
+          <Heading as="h1" size="2xl">Session Admin</Heading>
 
-            <VoterCount
-              value={numberOfVoters}
-              onChange={setNumberOfVoters}
-            />
+          {error && (
+            <Alert.Root status="error">
+              <Alert.Indicator />
+              <Alert.Title>{error}</Alert.Title>
+            </Alert.Root>
+          )}
 
-            <button
-              onClick={saveOptions}
-              className="btn w-full btn-primary"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Saving...' : 'Save Configuration'}
-            </button>
-          </div>
-        ) : (
-          <>
-            <CopyableLink
-              className='mb-7'
-              label="Voting Page"
-              url={`${window.location.origin}/session/${slug}`}
-            />
+          {sessionState === 'initiated' ? (
+            <VStack gap={6} align="stretch">
+              <OptionsManager
+                options={options}
+                onUpdateOption={(index, value) => {
+                  const newOptions = [...options];
+                  newOptions[index] = { ...newOptions[index], label: value };
+                  setOptions(newOptions);
+                }}
+                onAddOption={() => setOptions([...options, { label: '' }])}
+                onRemoveOption={(index) => setOptions(options.filter((_, i) => i !== index))}
+              />
 
-            <OptionsList
-              className='mb-7'
-              options={options}
-            />
+              <VoterCount
+                value={numberOfVoters}
+                onChange={setNumberOfVoters}
+              />
 
-            <TokenList
-              className='mb-7'
-              tokens={votingTokens}
-              onCopyToken={copyToClipboard}
-            />
+              <Button
+                colorScheme="blue"
+                size="lg"
+                onClick={saveOptions}
+                loading={isLoading}
+                disabled={isLoading}
+              >
+                Save Configuration
+              </Button>
+            </VStack>
+          ) : (
+            <VStack gap={7} align="stretch">
+              <CopyableLink
+                label="Voting Page"
+                url={`${window.location.origin}/session/${slug}`}
+              />
 
-            <div className="flex justify-center">
-              {sessionState === "configured" && (
-                <button
-                  onClick={closeVoting}
-                  className="btn w-full btn-primary"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Closing...' : 'Close Voting & Show Results'}
-                </button>
-              )}
+              <OptionsList options={options} />
 
-              {sessionState === 'finished' && (
-                <button
-                  onClick={() => router.push(`/session/${slug}`)}
-                  className="btn btn-primary"
-                >
-                  View Results
-                </button>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+              <TokenList
+                tokens={votingTokens}
+              />
+
+              <Box textAlign="center">
+                {sessionState === "configured" && (
+                  <Button
+                    colorScheme="blue"
+                    size="lg"
+                    width="full"
+                    onClick={closeVoting}
+                    loading={isLoading}
+                    loadingText="Closing..."
+                    disabled={isLoading}
+                  >
+                    Close Voting & Show Results
+                  </Button>
+                )}
+
+                {sessionState === 'finished' && (
+                  <Button
+                    colorScheme="blue"
+                    size="lg"
+                    onClick={() => router.push(`/session/${slug}`)}
+                  >
+                    View Results
+                  </Button>
+                )}
+              </Box>
+            </VStack>
+          )}
+        </VStack>
+      </Container>
+    </Box>
   );
 }

@@ -1,3 +1,15 @@
+import {
+  Box,
+  VStack,
+  Heading,
+  Input,
+  Button,
+  HStack,
+  IconButton,
+} from '@chakra-ui/react';
+
+import { X, Plus } from 'lucide-react';
+
 interface Option {
   id?: number;
   label: string;
@@ -10,38 +22,43 @@ interface OptionsManagerProps {
   onRemoveOption: (index: number) => void;
 }
 
-export function OptionsManager({ 
-  options, 
-  onUpdateOption, 
-  onAddOption, 
-  onRemoveOption 
+export function OptionsManager({
+  options,
+  onUpdateOption,
+  onAddOption,
+  onRemoveOption
 }: OptionsManagerProps) {
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Configure Options</h2>
-      <div className="space-y-2">
+    <Box>
+      <Heading as="h2" size="md" mb={4}>Configure Options</Heading>
+      <VStack gap={2} align="stretch">
         {options.map((option, index) => (
-          <div key={index} className="flex gap-2">
-            <input
-              type="text"
+          <HStack key={index}>
+            <Input
               value={option.label}
               onChange={(e) => onUpdateOption(index, e.target.value)}
               placeholder={`Option ${index + 1}`}
-              className="input input-bordered flex-1 bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
+              size="md"
             />
-            <button
+            <IconButton
               onClick={() => onRemoveOption(index)}
-              className="btn btn-square"
+              aria-label="Remove option"
               disabled={options.length <= 1}
+              size="md"
             >
-              ×
-            </button>
-          </div>
+              <X />
+            </IconButton>
+          </HStack>
         ))}
-      </div>
-      <button onClick={onAddOption} className="btn mt-3">
-        Add Option
-      </button>
-    </div>
+      </VStack>
+      <Button
+        onClick={onAddOption}
+        mt={3}
+        size="md"
+        variant="outline"
+      >
+        <Plus /> Add Option
+      </Button>
+    </Box>
   );
 }

@@ -1,3 +1,5 @@
+import { Box, Heading, VStack, Text, Card } from '@chakra-ui/react';
+
 interface Option {
   id?: number;
   label: string;
@@ -5,22 +7,21 @@ interface Option {
 
 interface OptionsListProps {
   options: Option[];
-  className?: string;
 }
 
-export function OptionsList({ options, className }: OptionsListProps) {
+export function OptionsList({ options }: OptionsListProps) {
   return (
-    <div className={className}>
-      <h2 className="text-xl font-bold mb-4">Options</h2>
-      <div className="space-y-2">
+    <Box>
+      <Heading as="h2" size="lg" mb={4}>Options</Heading>
+      <VStack gap={2} align="stretch">
         {options.map((option, index) => (
-          <div key={index} className="p-4 bg-surface-secondary rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">{option.label}</span>
-            </div>
-          </div>
+          <Card.Root key={index} variant="outline">
+            <Card.Body>
+              <Text fontSize="xl" fontWeight="medium">{option.label}</Text>
+            </Card.Body>
+          </Card.Root>
         ))}
-      </div>
-    </div>
+      </VStack>
+    </Box>
   );
 }

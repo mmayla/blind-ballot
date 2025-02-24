@@ -1,3 +1,6 @@
+import { ClipboardIconButton, ClipboardRoot } from '@/components/ui/clipboard';
+import { Box, Grid, GridItem, Heading, Text, Flex, Card } from '@chakra-ui/react';
+
 interface Token {
   token: string;
   used: boolean;
@@ -5,37 +8,34 @@ interface Token {
 
 interface TokenListProps {
   tokens: Token[];
-  onCopyToken: (token: string) => void;
   className?: string;
 }
 
-export function TokenList({ tokens, onCopyToken, className }: TokenListProps) {
+export function TokenList({ tokens, className }: TokenListProps) {
   return (
-    <div className={className}>
-      <h2 className="text-xl font-bold mb-4">Voting Tokens</h2>
-      <div className="grid grid-cols-2 gap-4">
+    <Box className={className}>
+      <Heading as="h2" size="lg" mb={4}>Voting Tokens</Heading>
+      <Grid templateColumns="repeat(2, 1fr)" gap={4} marginTop={5}>
         {tokens.map((token, index) => (
-          <div
-            key={index}
-            className={"p-4 bg-surface-secondary rounded-lg flex justify-between items-center"}
-          >
-            <div className="flex flex-col">
-              <span className="font-mono">{token.token}</span>
-              <span className="text-sm text-content-secondary">
-                {token.used ? 'Used' : 'Available'}
-              </span>
-            </div>
-            <button
-              onClick={() => onCopyToken(token.token)}
-              className="btn btn-sm"
-              disabled={token.used}
-              title={token.used ? 'Token is already used' : 'Copy token'}
-            >
-              Copy
-            </button>
-          </div>
+          <GridItem key={index} borderRadius="lg">
+            <Card.Root>
+              <Card.Body>
+                <Flex justify="space-between" align="center">
+                  <Box>
+                    <Text fontSize="xl">{token.token}</Text>
+                    <Text fontSize="sm">
+                      {token.used ? 'Used' : 'Available'}
+                    </Text>
+                  </Box>
+                  <ClipboardRoot value={token.token}>
+                    <ClipboardIconButton disabled={token.used} />
+                  </ClipboardRoot>
+                </Flex>
+              </Card.Body>
+            </Card.Root>
+          </GridItem>
         ))}
-      </div>
-    </div>
+      </Grid>
+    </Box>
   );
 }
