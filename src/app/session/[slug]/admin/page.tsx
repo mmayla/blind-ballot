@@ -102,13 +102,14 @@ export default function AdminPage() {
 
   const verifyWithToken = async (token: string) => {
     try {
-      const sessionResponse = await fetch(`/api/sessions/${slug}`, {
+      const response = await fetch(`/api/sessions/${slug}/verify-admin`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (!sessionResponse.ok) {
+      if (!response.ok) {
         removeToken(slug as string);
         return;
       }
