@@ -1,3 +1,13 @@
+import {
+  Box,
+  Heading,
+} from '@chakra-ui/react';
+
+import {
+  NumberInputField,
+  NumberInputRoot,
+} from "@/components/ui/number-input"
+
 interface VoterCountProps {
   value: number;
   onChange: (value: number) => void;
@@ -5,15 +15,17 @@ interface VoterCountProps {
 
 export function VoterCount({ value, onChange }: VoterCountProps) {
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-2">Number of Voters</h2>
-      <input
-        type="number"
-        min="2"
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value) || 2)}
-        className="input input-bordered w-full bg-surface-secondary text-content-primary border-border-secondary focus:border-border-primary"
-      />
-    </div>
+    <Box>
+      <Heading as="h2" size="md" mb={2}>Number of Voters</Heading>
+      <NumberInputRoot
+        min={2}
+        defaultValue='2'
+        value={value.toString()}
+        onValueChange={(e) => onChange(e.valueAsNumber)}
+        size="md"
+      >
+        <NumberInputField />
+      </NumberInputRoot>
+    </Box>
   );
 }
