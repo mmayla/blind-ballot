@@ -9,7 +9,7 @@ export interface AdminJwtPayload {
 }
 
 export function signAdminJwt(payload: Omit<AdminJwtPayload, 'role'>): string {
-  return jwt.sign({ ...payload, role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+  return jwt.sign({ ...payload, role: 'admin' }, JWT_SECRET, { expiresIn: '30d' });
 }
 
 export function verifyAdminJwt(token: string): AdminJwtPayload | null {
@@ -18,7 +18,7 @@ export function verifyAdminJwt(token: string): AdminJwtPayload | null {
     if (decoded.role !== 'admin') return null;
     return decoded;
   } catch (error) {
-    console.log(error)
+    console.error('JWT verification error:', error);
     return null;
   }
 }
