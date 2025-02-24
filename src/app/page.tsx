@@ -118,13 +118,13 @@ export default function Home() {
           </VStack>
 
           <HStack gap={2} mt={8}>
-            <Tag.Root size="xl">
+            <Tag.Root size="xl" rounded={10}>
               <Tag.Label>Secure</Tag.Label>
             </Tag.Root>
-            <Tag.Root size="xl">
+            <Tag.Root size="xl" rounded={10}>
               <Tag.Label>Anonymous</Tag.Label>
             </Tag.Root>
-            <Tag.Root size="xl">
+            <Tag.Root size="xl" rounded={10}>
               <Tag.Label>Simple</Tag.Label>
             </Tag.Root>
           </HStack>
