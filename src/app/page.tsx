@@ -105,7 +105,6 @@ export default function Home() {
               onKeyDown={(e) => e.key === 'Enter' && createSession()}
             />
             <Button
-              colorScheme="blue"
               size="lg"
               width="full"
               onClick={createSession}
