@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { sessions, options, tokens } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyAdmin } from '@/middleware/auth';
-import { generateUniqueVotingTokens } from '@/lib/token';
+import { generateUniqueVotingEncryptedTokensFromLabels } from '@/lib/token';
 
 export async function POST(request: NextRequest, props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
@@ -59,12 +59,15 @@ export async function POST(request: NextRequest, props: { params: Promise<{ slug
         }))
       );
 
-      const votingTokens = generateUniqueVotingTokens(newOptions.length);
+      const labels = newOptions.map((option: { label: string }) => option.label);
+      const votingTokens = await generateUniqueVotingEncryptedTokensFromLabels(labels, adminPassword);
       await tx.insert(tokens).values(
         votingTokens.map(token => ({
-          token,
+          token: token.ciphertext,
           sessionId: session.id,
-          used: 0
+          used: 0,
+          salt: token.salt,
+          iv: token.iv,
         }))
       );
 

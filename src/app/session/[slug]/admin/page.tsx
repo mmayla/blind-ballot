@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getStoredToken, storeToken, removeToken } from '@/lib/auth';
+import { decryptTokens } from '@/lib/token';
 import {
   Box,
   Container,
@@ -23,6 +24,8 @@ interface Option {
 interface Token {
   token: string;
   used: boolean;
+  salt?: string;
+  iv?: string;
 }
 
 export default function AdminPage() {
@@ -102,20 +105,26 @@ export default function AdminPage() {
 
         if (tokensResponse.ok) {
           const data = await tokensResponse.json();
-          setVotingTokens(data.tokens);
+          if (data.tokens[0].salt && data.tokens[0].iv) {
+            const decryptedTokens = await decryptTokens(data.tokens, password);
+            setVotingTokens(decryptedTokens);
+          } else {
+            setVotingTokens(data.tokens);
+          }
         }
       }
     } catch (error) {
       console.error('Error fetching session data:', error);
       setError('Failed to fetch session data');
     }
-  }, [authToken, slug]);
+  }, [authToken, slug, password]);
 
   useEffect(() => {
     let storedToken = getStoredToken(slug as string);
 
     if (sessionType === 'clique' && !password) {
       // TODO: ugly find a better way to make sure the password is in the state
+      setIsVerified(false)
       storedToken = 'invalid-token';
     }
 
@@ -286,7 +295,10 @@ export default function AdminPage() {
       }
 
       const data = await response.json();
-      setVotingTokens(data.tokens);
+
+      const decryptedTokens = await decryptTokens(data.tokens, password);
+      setVotingTokens(decryptedTokens);
+
       setSessionState('configured');
     } catch (error) {
       console.error('Error saving options:', error);
