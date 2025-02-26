@@ -26,6 +26,7 @@ interface Token {
   used: boolean;
   salt?: string;
   iv?: string;
+  ciphertext?: string;
 }
 
 export default function AdminPage() {

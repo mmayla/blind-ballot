@@ -61,6 +61,8 @@ export function ApprovalAdmin({
 }: ApprovalAdminProps) {
   const router = useRouter();
 
+  const votingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/session/${slug}`;
+
   return (
     <VStack gap={4} align="stretch">
       {error && (
@@ -112,13 +114,14 @@ export function ApprovalAdmin({
         <VStack gap={7} align="stretch">
           <CopyableLink
             label="Voting Page"
-            url={`${typeof window !== 'undefined' ? window.location.origin : ''}/session/${slug}`}
+            url={votingUrl}
           />
 
           <OptionsList options={options} />
 
           <TokenList
             tokens={votingTokens}
+            votingUrl={votingUrl}
           />
 
           <Box textAlign="center">

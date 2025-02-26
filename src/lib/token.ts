@@ -43,13 +43,16 @@ type Token = {
   used: boolean
 }
 
-export async function decryptTokens(tokens: Token[], password: string): Promise<Token[]> {
-  const decryptedTokens: Token[] = [];
+type DecryptedToken = Token & { ciphertext: string }
+
+export async function decryptTokens(tokens: Token[], password: string): Promise<DecryptedToken[]> {
+  const decryptedTokens: DecryptedToken[] = [];
   for (const token of tokens) {
     const decryptedToken = await decrypt(token.token, token.iv, token.salt, password);
     decryptedTokens.push({
       ...token,
       token: decryptedToken,
+      ciphertext: token.token
     });
   }
 

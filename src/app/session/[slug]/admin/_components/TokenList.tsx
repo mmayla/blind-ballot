@@ -1,17 +1,19 @@
 import { ClipboardIconButton, ClipboardRoot } from '@/components/ui/clipboard';
 import { Box, Grid, GridItem, Heading, Text, Flex, Card } from '@chakra-ui/react';
 
-interface Token {
+interface VotingToken {
   token: string;
   used: boolean;
+  label?: string;
 }
 
 interface TokenListProps {
-  tokens: Token[];
+  tokens: VotingToken[];
+  votingUrl: string;
   className?: string;
 }
 
-export function TokenList({ tokens, className }: TokenListProps) {
+export function TokenList({ tokens, votingUrl, className }: TokenListProps) {
   return (
     <Box className={className}>
       <Heading as="h2" size="lg" mb={4}>Voting Tokens</Heading>
@@ -22,12 +24,12 @@ export function TokenList({ tokens, className }: TokenListProps) {
               <Card.Body>
                 <Flex justify="space-between" align="center">
                   <Box>
-                    <Text fontSize="xl">{token.token}</Text>
+                    <Text fontSize="xl">{token.label ?? token.token}</Text>
                     <Text fontSize="sm">
                       {token.used ? 'Used' : 'Available'}
                     </Text>
                   </Box>
-                  <ClipboardRoot value={token.token}>
+                  <ClipboardRoot value={`${votingUrl}?token=${encodeURIComponent(token.token)}`}>
                     <ClipboardIconButton disabled={token.used} />
                   </ClipboardRoot>
                 </Flex>

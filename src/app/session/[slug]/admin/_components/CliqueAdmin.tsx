@@ -20,6 +20,7 @@ interface Option {
 
 interface Token {
   token: string;
+  ciphertext?: string;
   used: boolean;
 }
 
@@ -55,6 +56,8 @@ export function CliqueAdmin({
   onMaxVotesChange,
 }: CliqueAdminProps) {
   const router = useRouter();
+
+  const votingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/session/${slug}`;
 
   return (
     <VStack gap={4} align="stretch">
@@ -102,13 +105,14 @@ export function CliqueAdmin({
         <VStack gap={7} align="stretch">
           <CopyableLink
             label="Voting Page"
-            url={`${typeof window !== 'undefined' ? window.location.origin : ''}/session/${slug}`}
+            url={votingUrl}
           />
 
           <OptionsList options={options} />
 
           <TokenList
-            tokens={votingTokens}
+            tokens={parseVotingTokens(votingTokens)}
+            votingUrl={votingUrl}
           />
 
           <Box textAlign="center">
@@ -141,3 +145,14 @@ export function CliqueAdmin({
     </VStack>
   );
 }
+
+const parseVotingTokens = (tokens: Token[]) => {
+  return tokens.map((token) => {
+    const [, label] = token.token.split(':');
+    return {
+      token: token.ciphertext || '',
+      used: token.used,
+      label: label,
+    };
+  });
+};
