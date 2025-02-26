@@ -1,3 +1,11 @@
+import React from 'react';
+import { Alert, VStack, Text, Button, Card } from "@chakra-ui/react";
+import { DndContext } from '@dnd-kit/core';
+
+import { SessionLayout } from "./SessionLayout";
+import { DraggableOption } from "./DraggableOption";
+import { DroppableBallot } from "./DroppableBallot";
+
 interface Option {
     id: number;
     label: string;
@@ -22,5 +30,21 @@ export function CliqueVotingForm({
     minVotes = 2,
     maxVotes = options.length
 }: VotingFormProps) {
-    return (<div>{token}</div>)
+    return (
+        <SessionLayout title="Select Options">
+            <VStack align="stretch" gap={4}>
+                {error && (
+                    <Alert.Root status="error">
+                        <Alert.Description>
+                            {error}
+                        </Alert.Description>
+                    </Alert.Root>
+                )}
+
+                <DndContext>
+                    <DraggableOption label="test" />
+                    <DroppableBallot order={1} />
+                </DndContext>
+            </VStack>
+        </SessionLayout>)
 }
