@@ -10,6 +10,7 @@ export const sessions = sqliteTable('sessions', {
   state: text().$type<"initiated" | "configured" | "finished">().default("initiated"),
   minVotes: integer(),
   maxVotes: integer(),
+  weightsLabels: text(),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
 });
 
