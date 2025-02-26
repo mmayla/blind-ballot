@@ -18,6 +18,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
         name: session.name,
         slug: session.slug,
         state: session.state,
+        type: session.type,
       }
     });
   } catch (error) {
