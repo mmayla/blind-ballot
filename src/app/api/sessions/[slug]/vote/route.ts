@@ -10,9 +10,9 @@ export async function POST(request: NextRequest, props: { params: Promise<{ slug
   try {
     const { token, optionIds } = await request.json();
 
-    if (!token || !optionIds || !Array.isArray(optionIds) || optionIds.length < 2) {
+    if (!token || !optionIds || !Array.isArray(optionIds)) {
       return NextResponse.json(
-        { error: 'Invalid request. Must select at least 2 options.' },
+        { error: 'Invalid request. Token and optionIds are required.' },
         { status: 400 }
       );
     }
@@ -28,6 +28,23 @@ export async function POST(request: NextRequest, props: { params: Promise<{ slug
     if (session.state !== 'configured') {
       return NextResponse.json(
         { error: 'Session is not in voting state' },
+        { status: 400 }
+      );
+    }
+
+    const minVotes = session.minVotes || 2;
+    const maxVotes = session.maxVotes || optionIds.length;
+
+    if (optionIds.length < minVotes) {
+      return NextResponse.json(
+        { error: `You must select at least ${minVotes} options` },
+        { status: 400 }
+      );
+    }
+
+    if (optionIds.length > maxVotes) {
+      return NextResponse.json(
+        { error: `You can select at most ${maxVotes} options` },
         { status: 400 }
       );
     }

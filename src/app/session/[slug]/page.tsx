@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Alert } from '@chakra-ui/react';
 import { Results } from './_components/Results';
 import { TokenVerification } from './_components/TokenVerification';
@@ -21,6 +21,7 @@ interface Result {
 
 export default function SessionPage() {
   const { slug } = useParams();
+  const searchParams = useSearchParams();
   const [token, setToken] = useState('');
   const [options, setOptions] = useState<Option[]>([]);
   const [isVerified, setIsVerified] = useState(false);
@@ -29,6 +30,8 @@ export default function SessionPage() {
   const [error, setError] = useState('');
   const [results, setResults] = useState<Result[]>([]);
   const [sessionState, setSessionState] = useState<'initiated' | 'configured' | 'finished'>('initiated');
+  const [minVotes, setMinVotes] = useState<number>(2);
+  const [maxVotes, setMaxVotes] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const checkSessionStatus = async () => {
@@ -49,6 +52,15 @@ export default function SessionPage() {
           setOptions(data.options || []);
           setSessionState('configured');
         }
+
+        const sessionResponse = await fetch(`/api/sessions/${slug}`);
+        if (sessionResponse.ok) {
+          const data = await sessionResponse.json();
+          if (data.session) {
+            setMinVotes(data.session.minVotes ?? 2);
+            setMaxVotes(data.session.maxVotes ?? undefined);
+          }
+        }
       } catch (error) {
         console.error('Error checking session status:', error);
       }
@@ -56,6 +68,15 @@ export default function SessionPage() {
 
     checkSessionStatus();
   }, [slug]);
+
+  // Check for token in URL when the component mounts
+  useEffect(() => {
+    const tokenFromUrl = searchParams.get('token');
+    if (tokenFromUrl && !isVerified && !isVoted && sessionState === 'configured') {
+      const decodedToken = decodeURIComponent(tokenFromUrl);
+      verifyToken(decodedToken);
+    }
+  }, [searchParams, isVerified, isVoted, sessionState]);
 
   const verifyToken = async (tokenValue: string) => {
     setLoading(true);
@@ -140,6 +161,7 @@ export default function SessionPage() {
         onVerify={verifyToken}
         error={error}
         loading={loading}
+        initialToken={searchParams.get('token') || ''}
       />
     );
   }
@@ -150,6 +172,8 @@ export default function SessionPage() {
       onSubmit={submitVote}
       error={error}
       loading={loading}
+      minVotes={minVotes}
+      maxVotes={maxVotes}
     />
   );
 }
