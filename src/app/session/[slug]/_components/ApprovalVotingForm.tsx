@@ -16,7 +16,7 @@ interface VotingFormProps {
   maxVotes?: number;
 }
 
-export function VotingForm({
+export function ApprovalVotingForm({
   options,
   onSubmit,
   error,

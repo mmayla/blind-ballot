@@ -5,8 +5,9 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { Alert } from '@chakra-ui/react';
 import { Results } from './_components/Results';
 import { TokenVerification } from './_components/TokenVerification';
-import { VotingForm } from './_components/VotingForm';
+import { ApprovalVotingForm } from './_components/ApprovalVotingForm';
 import { SessionLayout } from './_components/SessionLayout';
+import { CliqueVotingForm } from './_components/CliqueVotingForm';
 
 interface Option {
   id: number;
@@ -29,6 +30,7 @@ export default function SessionPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [results, setResults] = useState<Result[]>([]);
+  const [sessionType, setSessionType] = useState<'approval' | 'clique'>('approval');
   const [sessionState, setSessionState] = useState<'initiated' | 'configured' | 'finished'>('initiated');
   const [minVotes, setMinVotes] = useState<number>(2);
   const [maxVotes, setMaxVotes] = useState<number | undefined>(undefined);
@@ -57,6 +59,7 @@ export default function SessionPage() {
         if (sessionResponse.ok) {
           const data = await sessionResponse.json();
           if (data.session) {
+            setSessionType(data.session.type);
             setMinVotes(data.session.minVotes ?? 2);
             setMaxVotes(data.session.maxVotes ?? undefined);
           }
@@ -166,14 +169,31 @@ export default function SessionPage() {
     );
   }
 
-  return (
-    <VotingForm
-      options={options}
-      onSubmit={submitVote}
-      error={error}
-      loading={loading}
-      minVotes={minVotes}
-      maxVotes={maxVotes}
-    />
-  );
+  if (sessionType === 'approval') {
+    return (
+      <ApprovalVotingForm
+        options={options}
+        onSubmit={submitVote}
+        error={error}
+        loading={loading}
+        minVotes={minVotes}
+        maxVotes={maxVotes}
+      />
+    );
+  }
+
+  if (sessionType === 'clique') {
+    return (
+      <CliqueVotingForm
+        token={token}
+        options={options}
+        onSubmit={submitVote}
+        error={error}
+        loading={loading}
+        minVotes={minVotes}
+        maxVotes={maxVotes}
+      />);
+  }
+
+  return (<div>unknown session type</div>);
 }
