@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getStoredToken, storeToken, removeToken } from '@/lib/auth';
 import { CopyableLink } from '@/components/shared/CopyableLink';
@@ -43,20 +43,30 @@ export default function AdminPage() {
   const [votingTokens, setVotingTokens] = useState<Token[]>([]);
   const [sessionState, setSessionState] = useState<'initiated' | 'configured' | 'finished'>('initiated');
 
-  useEffect(() => {
-    const storedToken = getStoredToken(slug as string);
-    if (storedToken) {
-      verifyWithToken(storedToken);
+  const verifyWithToken = useCallback(async (token: string) => {
+    try {
+      const response = await fetch(`/api/sessions/${slug}/verify-admin`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        removeToken(slug as string);
+        return;
+      }
+
+      setAuthToken(token);
+      setIsVerified(true);
+      storeToken(slug as string, token);
+    } catch (error) {
+      console.error('Error verifying token:', error);
+      removeToken(slug as string);
     }
   }, [slug]);
 
-  useEffect(() => {
-    if (authToken) {
-      fetchSessionData();
-    }
-  }, [authToken, slug]);
-
-  const fetchSessionData = async () => {
+  const fetchSessionData = useCallback(async () => {
     try {
       const sessionResponse = await fetch(`/api/sessions/${slug}`, {
         headers: {
@@ -98,30 +108,20 @@ export default function AdminPage() {
       console.error('Error fetching session data:', error);
       setError('Failed to fetch session data');
     }
-  };
+  }, [authToken, slug]);
 
-  const verifyWithToken = async (token: string) => {
-    try {
-      const response = await fetch(`/api/sessions/${slug}/verify-admin`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        removeToken(slug as string);
-        return;
-      }
-
-      setAuthToken(token);
-      setIsVerified(true);
-      storeToken(slug as string, token);
-    } catch (error) {
-      console.error('Error verifying token:', error);
-      removeToken(slug as string);
+  useEffect(() => {
+    const storedToken = getStoredToken(slug as string);
+    if (storedToken) {
+      verifyWithToken(storedToken);
     }
-  };
+  }, [slug, verifyWithToken]);
+
+  useEffect(() => {
+    if (authToken) {
+      fetchSessionData();
+    }
+  }, [authToken, slug, fetchSessionData]);
 
   const verifyPassword = async () => {
     if (!password.trim() || isLoading) return;
