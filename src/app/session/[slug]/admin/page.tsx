@@ -38,6 +38,8 @@ export default function AdminPage() {
   const [votingTokens, setVotingTokens] = useState<Token[]>([]);
   const [sessionState, setSessionState] = useState<'initiated' | 'configured' | 'finished'>('initiated');
   const [sessionType, setSessionType] = useState<'approval' | 'clique'>('approval');
+  const [minVotes, setMinVotes] = useState<number>(0);
+  const [maxVotes, setMaxVotes] = useState<number>(0);
 
   const verifyWithToken = useCallback(async (token: string) => {
     try {
@@ -77,6 +79,8 @@ export default function AdminPage() {
       const sessionData = await sessionResponse.json();
       setSessionState(sessionData.session.state);
       setSessionType(sessionData.session.type);
+      setMinVotes(sessionData.session.minVotes);
+      setMaxVotes(sessionData.session.maxVotes);
 
       if (sessionData.session.state !== 'initiated') {
         const optionsResponse = await fetch(`/api/sessions/${slug}/options`, {
@@ -157,7 +161,7 @@ export default function AdminPage() {
     }
   };
 
-  const saveOptions = async () => {
+  const configureApprovalSession = async () => {
     const validOptions = options.filter(opt => opt.label.trim());
     if (validOptions.length < 2) {
       setError('Please add at least 2 valid options');
@@ -171,6 +175,30 @@ export default function AdminPage() {
 
     setIsLoading(true);
     setError('');
+
+    try {
+      const response = await fetch(`/api/sessions/${slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          minVotes,
+          maxVotes,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error ?? 'Failed to configure session')
+      }
+    } catch (error) {
+      console.error('Error configuring session:', error);
+      setError('Failed to configure session');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch(`/api/sessions/${slug}/options`, {
@@ -201,15 +229,44 @@ export default function AdminPage() {
     }
   };
 
-  const saveCliqueOptions = async () => {
+  const configureCliqueSession = async () => {
     const validOptions = options.filter(opt => opt.label.trim());
     if (validOptions.length < 2) {
       setError('Please add at least 2 valid options');
       return;
     }
 
+    if (minVotes > maxVotes) {
+      setError('Minimum votes cannot be greater than maximum votes');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
+
+    try {
+      const response = await fetch(`/api/sessions/${slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          minVotes,
+          maxVotes,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error ?? 'Failed to configure session')
+      }
+    } catch (error) {
+      console.error('Error configuring session:', error);
+      setError('Failed to configure session');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch(`/api/sessions/${slug}/clique-options`, {
@@ -231,10 +288,9 @@ export default function AdminPage() {
       const data = await response.json();
       setVotingTokens(data.tokens);
       setSessionState('configured');
-      router.refresh();
     } catch (error) {
       console.error('Error saving options:', error);
-      setError('Failed to save options');
+      setError('Failed to configure session');
     } finally {
       setIsLoading(false);
     }
@@ -305,8 +361,12 @@ export default function AdminPage() {
               votingTokens={votingTokens}
               isLoading={isLoading}
               error={error}
-              saveOptions={saveOptions}
+              configureSession={configureApprovalSession}
               closeVoting={closeVoting}
+              minVotes={minVotes}
+              maxVotes={maxVotes}
+              onMinVotesChange={setMinVotes}
+              onMaxVotesChange={setMaxVotes}
             />
           ) : (
             <CliqueAdmin
@@ -317,8 +377,12 @@ export default function AdminPage() {
               votingTokens={votingTokens}
               isLoading={isLoading}
               error={error}
-              saveOptions={saveCliqueOptions}
+              configureSession={configureCliqueSession}
               closeVoting={closeVoting}
+              minVotes={minVotes}
+              maxVotes={maxVotes}
+              onMinVotesChange={setMinVotes}
+              onMaxVotesChange={setMaxVotes}
             />
           )}
         </VStack>

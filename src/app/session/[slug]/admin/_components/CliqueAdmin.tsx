@@ -11,6 +11,7 @@ import { CopyableLink } from '@/components/shared/CopyableLink';
 import { OptionsManager } from './OptionsManager';
 import { OptionsList } from './OptionsList';
 import { TokenList } from './TokenList';
+import { SessionManager } from './SessionManager';
 
 interface Option {
   id?: number;
@@ -30,8 +31,12 @@ interface CliqueAdminProps {
   votingTokens: Token[];
   isLoading: boolean;
   error: string;
-  saveOptions: () => Promise<void>;
+  configureSession: () => Promise<void>;
   closeVoting: () => Promise<void>;
+  minVotes?: number;
+  maxVotes?: number;
+  onMinVotesChange: (value: number) => void;
+  onMaxVotesChange: (value: number) => void;
 }
 
 export function CliqueAdmin({
@@ -42,8 +47,12 @@ export function CliqueAdmin({
   votingTokens,
   isLoading,
   error,
-  saveOptions,
+  configureSession,
   closeVoting,
+  minVotes,
+  maxVotes,
+  onMinVotesChange,
+  onMaxVotesChange,
 }: CliqueAdminProps) {
   const router = useRouter();
 
@@ -57,10 +66,17 @@ export function CliqueAdmin({
       )}
 
       <Heading size="md">Clique Voting Session</Heading>
-      <Text>In a clique voting session, participants can distribute votes among themselves with different weights.</Text>
+      <Text mb={7}>In a clique voting session, participants can distribute votes among themselves with different weights.</Text>
 
       {sessionState === 'initiated' ? (
-        <VStack gap={6} align="stretch">
+        <VStack gap={7} align="stretch">
+          <SessionManager
+            minVotes={minVotes}
+            maxVotes={maxVotes}
+            onMinVotesChange={onMinVotesChange}
+            onMaxVotesChange={onMaxVotesChange}
+          />
+
           <OptionsManager
             options={options}
             onUpdateOption={(index, value) => {
@@ -75,7 +91,7 @@ export function CliqueAdmin({
           <Button
             colorScheme="blue"
             size="lg"
-            onClick={saveOptions}
+            onClick={configureSession}
             loading={isLoading}
             disabled={isLoading}
           >

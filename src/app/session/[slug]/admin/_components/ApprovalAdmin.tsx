@@ -12,6 +12,7 @@ import { OptionsManager } from './OptionsManager';
 import { VoterCount } from './VoterCount';
 import { OptionsList } from './OptionsList';
 import { TokenList } from './TokenList';
+import { SessionManager } from './SessionManager';
 
 interface Option {
   id?: number;
@@ -33,8 +34,12 @@ interface ApprovalAdminProps {
   votingTokens: Token[];
   isLoading: boolean;
   error: string;
-  saveOptions: () => Promise<void>;
+  configureSession: () => Promise<void>;
   closeVoting: () => Promise<void>;
+  minVotes?: number;
+  maxVotes?: number;
+  onMinVotesChange: (value: number) => void;
+  onMaxVotesChange: (value: number) => void;
 }
 
 export function ApprovalAdmin({
@@ -47,8 +52,12 @@ export function ApprovalAdmin({
   votingTokens,
   isLoading,
   error,
-  saveOptions,
+  configureSession,
   closeVoting,
+  minVotes,
+  maxVotes,
+  onMinVotesChange,
+  onMaxVotesChange,
 }: ApprovalAdminProps) {
   const router = useRouter();
 
@@ -62,10 +71,17 @@ export function ApprovalAdmin({
       )}
 
       <Heading size="md">Approval Session</Heading>
-      <Text>In an approval session, vote for multiple options and results are shown by the total number of votes for each option.</Text>
+      <Text mb={7}>In an approval session, vote for multiple options and results are shown by the total number of votes for each option.</Text>
 
       {sessionState === 'initiated' ? (
-        <VStack gap={6} align="stretch">
+        <VStack gap={7} align="stretch">
+          <SessionManager
+            minVotes={minVotes}
+            maxVotes={maxVotes}
+            onMinVotesChange={onMinVotesChange}
+            onMaxVotesChange={onMaxVotesChange}
+          />
+
           <OptionsManager
             options={options}
             onUpdateOption={(index, value) => {
@@ -85,7 +101,7 @@ export function ApprovalAdmin({
           <Button
             colorScheme="blue"
             size="lg"
-            onClick={saveOptions}
+            onClick={configureSession}
             loading={isLoading}
             disabled={isLoading}
           >
