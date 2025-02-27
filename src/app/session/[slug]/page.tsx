@@ -40,7 +40,7 @@ export default function SessionPage() {
     const checkSessionStatus = async () => {
       try {
         // First try to get session results
-        const resultsResponse = await fetch(`/api/sessions/${slug}/results`);
+        const resultsResponse = await fetch(`/api/sessions/${slug}/approval-results`);
         if (resultsResponse.ok) {
           const data = await resultsResponse.json();
           setResults(data.results || []);
