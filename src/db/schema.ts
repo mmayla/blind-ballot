@@ -15,8 +15,7 @@ export const sessions = sqliteTable('sessions', {
 });
 
 export const tokens = sqliteTable('tokens', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  token: text('token').notNull().unique(),
+  token: text('token').primaryKey(),
   sessionId: integer('session_id').references(() => sessions.id),
   used: integer('used').default(0),
   salt: text('salt'),
@@ -47,7 +46,7 @@ export const votes = sqliteTable('votes', {
 
 export const cliqueVotes = sqliteTable('clique_votes', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  tokenId: integer('token_id').references(() => tokens.id),
+  token: text('token').references(() => tokens.token),
   optionId: integer('option_id').references(() => options.id),
   order: integer('order').notNull(),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
