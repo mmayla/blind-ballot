@@ -396,6 +396,7 @@ export default function AdminPage() {
               maxVotes={maxVotes}
               onMinVotesChange={setMinVotes}
               onMaxVotesChange={setMaxVotes}
+              adminPassword={password}
             />
           )}
         </VStack>

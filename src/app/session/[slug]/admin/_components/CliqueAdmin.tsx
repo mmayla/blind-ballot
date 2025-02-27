@@ -12,6 +12,7 @@ import { OptionsManager } from './OptionsManager';
 import { OptionsList } from './OptionsList';
 import { TokenList } from './TokenList';
 import { SessionManager } from './SessionManager';
+import { CliqueResults } from './CliqueResults';
 
 interface Option {
   id?: number;
@@ -38,6 +39,7 @@ interface CliqueAdminProps {
   maxVotes?: number;
   onMinVotesChange: (value: number) => void;
   onMaxVotesChange: (value: number) => void;
+  adminPassword: string;
 }
 
 export function CliqueAdmin({
@@ -54,6 +56,7 @@ export function CliqueAdmin({
   maxVotes,
   onMinVotesChange,
   onMaxVotesChange,
+  adminPassword,
 }: CliqueAdminProps) {
   const router = useRouter();
 
@@ -114,6 +117,8 @@ export function CliqueAdmin({
             tokens={parseVotingTokens(votingTokens)}
             votingUrl={votingUrl}
           />
+
+          <CliqueResults slug={slug} adminPassword={adminPassword} />
 
           <Box textAlign="center">
             {sessionState === "configured" && (
