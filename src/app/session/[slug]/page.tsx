@@ -7,7 +7,7 @@ import { Results } from './_components/Results';
 import { TokenVerification } from './_components/TokenVerification';
 import { ApprovalVotingForm } from './_components/ApprovalVotingForm';
 import { SessionLayout } from './_components/SessionLayout';
-import { CliqueVotingForm } from './_components/CliqueVotingForm';
+import { CliqueVotingForm, TieredOption } from './_components/CliqueVotingForm';
 
 interface Option {
   id: number;
@@ -113,12 +113,12 @@ export default function SessionPage() {
     }
   };
 
-  const submitVote = async (selectedOptionIds: number[]) => {
+  const submitApprovalVote = async (selectedOptionIds: number[]) => {
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`/api/sessions/${slug}/vote`, {
+      const response = await fetch(`/api/sessions/${slug}/approval-vote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,6 +141,35 @@ export default function SessionPage() {
       setLoading(false);
     }
   };
+
+  const submitCliqueVote = async (votes: TieredOption[]) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/sessions/${slug}/clique-vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          votes,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit vote');
+      }
+
+      setIsVoted(true);
+    } catch (error) {
+      console.error('Error submitting vote:', error);
+      setError('Failed to submit vote');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (sessionState === 'finished') {
     return <Results results={results} />;
@@ -173,7 +202,7 @@ export default function SessionPage() {
     return (
       <ApprovalVotingForm
         options={options}
-        onSubmit={submitVote}
+        onSubmit={submitApprovalVote}
         error={error}
         loading={loading}
         minVotes={minVotes}
@@ -187,7 +216,7 @@ export default function SessionPage() {
       <CliqueVotingForm
         token={token}
         options={options}
-        onSubmit={submitVote}
+        onSubmit={submitCliqueVote}
         error={error}
         loading={loading}
         minVotes={minVotes}
