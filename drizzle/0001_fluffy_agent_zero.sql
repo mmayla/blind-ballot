@@ -1,1 +1,0 @@
-ALTER TABLE `clique_votes` RENAME COLUMN "weight" TO "order";

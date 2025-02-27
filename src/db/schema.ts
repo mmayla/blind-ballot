@@ -28,6 +28,7 @@ export const options = sqliteTable('options', {
   sessionId: integer('session_id').references(() => sessions.id),
   label: text('label').notNull(),
   description: text('description'),
+  pinnedOrder: integer(),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
 })
 
