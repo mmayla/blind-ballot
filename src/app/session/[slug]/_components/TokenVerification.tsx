@@ -6,10 +6,11 @@ interface TokenVerificationProps {
   onVerify: (token: string) => Promise<void>;
   error?: string;
   loading?: boolean;
+  initialToken?: string;
 }
 
-export function TokenVerification({ onVerify, error, loading }: TokenVerificationProps) {
-  const [token, setToken] = useState('');
+export function TokenVerification({ onVerify, error, loading, initialToken = '' }: TokenVerificationProps) {
+  const [token, setToken] = useState(initialToken ? decodeURIComponent(initialToken) : '');
 
   const handleVerify = () => {
     if (!token.trim() || loading) return;

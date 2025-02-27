@@ -1,26 +1,18 @@
-CREATE TABLE `clique_voters` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`name` text NOT NULL,
-	`token` text,
-	`session_id` integer,
-	`created_at` text DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY (`token`) REFERENCES `tokens`(`token`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`session_id`) REFERENCES `sessions`(`id`) ON UPDATE no action ON DELETE no action
-);
---> statement-breakpoint
 CREATE TABLE `clique_votes` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`voter_id` integer,
-	`voter_choice_id` integer,
+	`token_id` integer,
+	`option_id` integer,
+	`weight` integer NOT NULL,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY (`voter_id`) REFERENCES `clique_voters`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`voter_choice_id`) REFERENCES `clique_voters`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`token_id`) REFERENCES `tokens`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`option_id`) REFERENCES `options`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `options` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`session_id` integer,
 	`label` text NOT NULL,
+	`description` text,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP,
 	FOREIGN KEY (`session_id`) REFERENCES `sessions`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -34,18 +26,23 @@ CREATE TABLE `sessions` (
 	`state` text DEFAULT 'initiated',
 	`minVotes` integer,
 	`maxVotes` integer,
+	`weightsLabels` text,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `sessions_slug_unique` ON `sessions` (`slug`);--> statement-breakpoint
 CREATE TABLE `tokens` (
-	`token` text PRIMARY KEY NOT NULL,
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`token` text NOT NULL,
 	`session_id` integer,
 	`used` integer DEFAULT 0,
+	`salt` text,
+	`iv` text,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP,
 	FOREIGN KEY (`session_id`) REFERENCES `sessions`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `tokens_token_unique` ON `tokens` (`token`);--> statement-breakpoint
 CREATE TABLE `voters` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`session_id` integer,

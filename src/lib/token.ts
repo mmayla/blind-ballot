@@ -1,4 +1,5 @@
 import { customAlphabet } from 'nanoid';
+import { decrypt, encrypt } from './crypto';
 
 // Using a custom alphabet that excludes similar-looking characters
 const alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
@@ -19,4 +20,41 @@ export function generateUniqueVotingTokens(count: number): string[] {
   }
 
   return Array.from(tokens);
+}
+
+export function generateUniqueVotingEncryptedTokensFromLabels(labels: string[], password: string): Promise<{
+  ciphertext: string
+  iv: string
+  salt: string
+}[]> {
+  const tokens = generateUniqueVotingTokens(labels.length);
+  if (tokens.length !== labels.length) throw new Error('Not enough tokens');
+  const labeledTokens = tokens.map((token, index) => `${token}:${labels[index]}`);
+
+  const encryptedTokensPromises = labeledTokens.map(token => encrypt(token, password));
+
+  return Promise.all(encryptedTokensPromises);
+}
+
+type Token = {
+  token: string
+  salt: string
+  iv: string
+  used: boolean
+}
+
+type DecryptedToken = Token & { ciphertext: string }
+
+export async function decryptTokens(tokens: Token[], password: string): Promise<DecryptedToken[]> {
+  const decryptedTokens: DecryptedToken[] = [];
+  for (const token of tokens) {
+    const decryptedToken = await decrypt(token.token, token.iv, token.salt, password);
+    decryptedTokens.push({
+      ...token,
+      token: decryptedToken,
+      ciphertext: token.token
+    });
+  }
+
+  return decryptedTokens;
 }

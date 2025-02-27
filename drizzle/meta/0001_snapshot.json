@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5accb54b-e192-4651-b1a1-c664337ebf4a",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "e38c8cde-cd14-46fe-b86e-71085466aa26",
+  "prevId": "5accb54b-e192-4651-b1a1-c664337ebf4a",
   "tables": {
     "clique_votes": {
       "name": "clique_votes",
@@ -28,8 +28,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "weight": {
-          "name": "weight",
+        "order": {
+          "name": "order",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -429,7 +429,9 @@
   "_meta": {
     "schemas": {},
     "tables": {},
-    "columns": {}
+    "columns": {
+      "\"clique_votes\".\"weight\"": "\"clique_votes\".\"order\""
+    }
   },
   "internal": {
     "indexes": {}

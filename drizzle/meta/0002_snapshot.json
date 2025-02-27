@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5accb54b-e192-4651-b1a1-c664337ebf4a",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "d3fb060a-8c03-43ef-992e-ae16769234d6",
+  "prevId": "e38c8cde-cd14-46fe-b86e-71085466aa26",
   "tables": {
     "clique_votes": {
       "name": "clique_votes",
@@ -14,9 +14,9 @@
           "notNull": true,
           "autoincrement": true
         },
-        "token_id": {
-          "name": "token_id",
-          "type": "integer",
+        "token": {
+          "name": "token",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -28,8 +28,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "weight": {
-          "name": "weight",
+        "order": {
+          "name": "order",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -46,15 +46,15 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "clique_votes_token_id_tokens_id_fk": {
-          "name": "clique_votes_token_id_tokens_id_fk",
+        "clique_votes_token_tokens_token_fk": {
+          "name": "clique_votes_token_tokens_token_fk",
           "tableFrom": "clique_votes",
           "tableTo": "tokens",
           "columnsFrom": [
-            "token_id"
+            "token"
           ],
           "columnsTo": [
-            "id"
+            "token"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -231,17 +231,10 @@
     "tokens": {
       "name": "tokens",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
         "token": {
           "name": "token",
           "type": "text",
-          "primaryKey": false,
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": false
         },
@@ -283,15 +276,7 @@
           "default": "CURRENT_TIMESTAMP"
         }
       },
-      "indexes": {
-        "tokens_token_unique": {
-          "name": "tokens_token_unique",
-          "columns": [
-            "token"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "tokens_session_id_sessions_id_fk": {
           "name": "tokens_session_id_sessions_id_fk",
@@ -429,7 +414,9 @@
   "_meta": {
     "schemas": {},
     "tables": {},
-    "columns": {}
+    "columns": {
+      "\"clique_votes\".\"token_id\"": "\"clique_votes\".\"token\""
+    }
   },
   "internal": {
     "indexes": {}

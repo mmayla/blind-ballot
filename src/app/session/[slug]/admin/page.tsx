@@ -1,24 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getStoredToken, storeToken, removeToken } from '@/lib/auth';
-import { CopyableLink } from '@/components/shared/CopyableLink';
-import { OptionsManager } from './_components/OptionsManager';
-import { TokenList } from './_components/TokenList';
-import { VoterCount } from './_components/VoterCount';
-import { AdminAuth } from './_components/AdminAuth';
-import { OptionsList } from './_components/OptionsList';
+import { decryptTokens } from '@/lib/token';
 import {
   Box,
   Container,
   VStack,
   Heading,
-  Button,
   Spinner,
   Center,
-  Alert,
 } from '@chakra-ui/react';
+import { AdminAuth } from './_components/AdminAuth';
+import { ApprovalAdmin } from './_components/ApprovalAdmin';
+import { CliqueAdmin } from './_components/CliqueAdmin';
 
 interface Option {
   id?: number;
@@ -28,6 +24,9 @@ interface Option {
 interface Token {
   token: string;
   used: boolean;
+  salt?: string;
+  iv?: string;
+  ciphertext?: string;
 }
 
 export default function AdminPage() {
@@ -42,21 +41,34 @@ export default function AdminPage() {
   const [numberOfVoters, setNumberOfVoters] = useState(2);
   const [votingTokens, setVotingTokens] = useState<Token[]>([]);
   const [sessionState, setSessionState] = useState<'initiated' | 'configured' | 'finished'>('initiated');
+  const [sessionType, setSessionType] = useState<'approval' | 'clique'>('approval');
+  const [minVotes, setMinVotes] = useState<number>(0);
+  const [maxVotes, setMaxVotes] = useState<number>(0);
 
-  useEffect(() => {
-    const storedToken = getStoredToken(slug as string);
-    if (storedToken) {
-      verifyWithToken(storedToken);
+  const verifyWithToken = useCallback(async (token: string) => {
+    try {
+      const response = await fetch(`/api/sessions/${slug}/verify-admin`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        removeToken(slug as string);
+        return;
+      }
+
+      setAuthToken(token);
+      setIsVerified(true);
+      storeToken(slug as string, token);
+    } catch (error) {
+      console.error('Error verifying token:', error);
+      removeToken(slug as string);
     }
   }, [slug]);
 
-  useEffect(() => {
-    if (authToken) {
-      fetchSessionData();
-    }
-  }, [authToken, slug]);
-
-  const fetchSessionData = async () => {
+  const fetchSessionData = useCallback(async () => {
     try {
       const sessionResponse = await fetch(`/api/sessions/${slug}`, {
         headers: {
@@ -70,6 +82,9 @@ export default function AdminPage() {
 
       const sessionData = await sessionResponse.json();
       setSessionState(sessionData.session.state);
+      setSessionType(sessionData.session.type);
+      setMinVotes(sessionData.session.minVotes);
+      setMaxVotes(sessionData.session.maxVotes);
 
       if (sessionData.session.state !== 'initiated') {
         const optionsResponse = await fetch(`/api/sessions/${slug}/options`, {
@@ -91,37 +106,39 @@ export default function AdminPage() {
 
         if (tokensResponse.ok) {
           const data = await tokensResponse.json();
-          setVotingTokens(data.tokens);
+          if (data.tokens[0].salt && data.tokens[0].iv) {
+            const decryptedTokens = await decryptTokens(data.tokens, password);
+            setVotingTokens(decryptedTokens);
+          } else {
+            setVotingTokens(data.tokens);
+          }
         }
       }
     } catch (error) {
       console.error('Error fetching session data:', error);
       setError('Failed to fetch session data');
     }
-  };
+  }, [authToken, slug, password]);
 
-  const verifyWithToken = async (token: string) => {
-    try {
-      const response = await fetch(`/api/sessions/${slug}/verify-admin`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+  useEffect(() => {
+    let storedToken = getStoredToken(slug as string);
 
-      if (!response.ok) {
-        removeToken(slug as string);
-        return;
-      }
-
-      setAuthToken(token);
-      setIsVerified(true);
-      storeToken(slug as string, token);
-    } catch (error) {
-      console.error('Error verifying token:', error);
-      removeToken(slug as string);
+    if (sessionType === 'clique' && !password) {
+      // TODO: ugly find a better way to make sure the password is in the state
+      setIsVerified(false)
+      storedToken = 'invalid-token';
     }
-  };
+
+    if (storedToken) {
+      verifyWithToken(storedToken);
+    }
+  }, [slug, password, sessionType, verifyWithToken]);
+
+  useEffect(() => {
+    if (authToken) {
+      fetchSessionData();
+    }
+  }, [authToken, slug, fetchSessionData]);
 
   const verifyPassword = async () => {
     if (!password.trim() || isLoading) return;
@@ -154,7 +171,7 @@ export default function AdminPage() {
     }
   };
 
-  const saveOptions = async () => {
+  const configureApprovalSession = async () => {
     const validOptions = options.filter(opt => opt.label.trim());
     if (validOptions.length < 2) {
       setError('Please add at least 2 valid options');
@@ -168,6 +185,30 @@ export default function AdminPage() {
 
     setIsLoading(true);
     setError('');
+
+    try {
+      const response = await fetch(`/api/sessions/${slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          minVotes,
+          maxVotes,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error ?? 'Failed to configure session')
+      }
+    } catch (error) {
+      console.error('Error configuring session:', error);
+      setError('Failed to configure session');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch(`/api/sessions/${slug}/options`, {
@@ -193,6 +234,76 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Error saving options:', error);
       setError('Failed to save options');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const configureCliqueSession = async () => {
+    const validOptions = options.filter(opt => opt.label.trim());
+    if (validOptions.length < 2) {
+      setError('Please add at least 2 valid options');
+      return;
+    }
+
+    if (minVotes > maxVotes) {
+      setError('Minimum votes cannot be greater than maximum votes');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/sessions/${slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          minVotes,
+          maxVotes,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error ?? 'Failed to configure session')
+      }
+    } catch (error) {
+      console.error('Error configuring session:', error);
+      setError('Failed to configure session');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/sessions/${slug}/clique-options`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          options: validOptions,
+          adminPassword: password,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save options');
+      }
+
+      const data = await response.json();
+
+      const decryptedTokens = await decryptTokens(data.tokens, password);
+      setVotingTokens(decryptedTokens);
+
+      setSessionState('configured');
+    } catch (error) {
+      console.error('Error saving options:', error);
+      setError('Failed to configure session');
     } finally {
       setIsLoading(false);
     }
@@ -252,80 +363,41 @@ export default function AdminPage() {
         <VStack align="stretch" gap={4}>
           <Heading as="h1" size="2xl">Session Admin</Heading>
 
-          {error && (
-            <Alert.Root status="error">
-              <Alert.Indicator />
-              <Alert.Title>{error}</Alert.Title>
-            </Alert.Root>
-          )}
-
-          {sessionState === 'initiated' ? (
-            <VStack gap={6} align="stretch">
-              <OptionsManager
-                options={options}
-                onUpdateOption={(index, value) => {
-                  const newOptions = [...options];
-                  newOptions[index] = { ...newOptions[index], label: value };
-                  setOptions(newOptions);
-                }}
-                onAddOption={() => setOptions([...options, { label: '' }])}
-                onRemoveOption={(index) => setOptions(options.filter((_, i) => i !== index))}
-              />
-
-              <VoterCount
-                value={numberOfVoters}
-                onChange={setNumberOfVoters}
-              />
-
-              <Button
-                colorScheme="blue"
-                size="lg"
-                onClick={saveOptions}
-                loading={isLoading}
-                disabled={isLoading}
-              >
-                Save Configuration
-              </Button>
-            </VStack>
+          {sessionType === 'approval' ? (
+            <ApprovalAdmin
+              slug={slug as string}
+              sessionState={sessionState}
+              options={options}
+              setOptions={setOptions}
+              numberOfVoters={numberOfVoters}
+              setNumberOfVoters={setNumberOfVoters}
+              votingTokens={votingTokens}
+              isLoading={isLoading}
+              error={error}
+              configureSession={configureApprovalSession}
+              closeVoting={closeVoting}
+              minVotes={minVotes}
+              maxVotes={maxVotes}
+              onMinVotesChange={setMinVotes}
+              onMaxVotesChange={setMaxVotes}
+            />
           ) : (
-            <VStack gap={7} align="stretch">
-              <CopyableLink
-                label="Voting Page"
-                url={`${window.location.origin}/session/${slug}`}
-              />
-
-              <OptionsList options={options} />
-
-              <TokenList
-                tokens={votingTokens}
-              />
-
-              <Box textAlign="center">
-                {sessionState === "configured" && (
-                  <Button
-                    colorScheme="blue"
-                    size="lg"
-                    width="full"
-                    onClick={closeVoting}
-                    loading={isLoading}
-                    loadingText="Closing..."
-                    disabled={isLoading}
-                  >
-                    Close Voting & Show Results
-                  </Button>
-                )}
-
-                {sessionState === 'finished' && (
-                  <Button
-                    colorScheme="blue"
-                    size="lg"
-                    onClick={() => router.push(`/session/${slug}`)}
-                  >
-                    View Results
-                  </Button>
-                )}
-              </Box>
-            </VStack>
+            <CliqueAdmin
+              slug={slug as string}
+              sessionState={sessionState}
+              options={options}
+              setOptions={setOptions}
+              votingTokens={votingTokens}
+              isLoading={isLoading}
+              error={error}
+              configureSession={configureCliqueSession}
+              closeVoting={closeVoting}
+              minVotes={minVotes}
+              maxVotes={maxVotes}
+              onMinVotesChange={setMinVotes}
+              onMaxVotesChange={setMaxVotes}
+              adminPassword={password}
+            />
           )}
         </VStack>
       </Container>
