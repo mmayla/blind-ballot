@@ -385,11 +385,14 @@ export default function AdminPage() {
             <CliqueAdmin
               slug={slug as string}
               sessionState={sessionState}
+              setSessionState={setSessionState}
               options={options}
               setOptions={setOptions}
               votingTokens={votingTokens}
+              setIsLoading={setIsLoading}
               isLoading={isLoading}
               error={error}
+              setError={setError}
               configureSession={configureCliqueSession}
               closeVoting={closeVoting}
               minVotes={minVotes}

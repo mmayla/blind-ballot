@@ -1,4 +1,3 @@
-import { useRouter } from 'next/navigation';
 import {
   VStack,
   Button,
@@ -9,10 +8,10 @@ import {
 } from '@chakra-ui/react';
 import { CopyableLink } from '@/components/shared/CopyableLink';
 import { OptionsManager } from './OptionsManager';
-import { OptionsList } from './OptionsList';
 import { TokenList } from './TokenList';
 import { SessionManager } from './SessionManager';
 import { CliqueResults } from './CliqueResults';
+import { getStoredToken } from '@/lib/auth';
 
 interface Option {
   id?: number;
@@ -28,11 +27,14 @@ interface Token {
 interface CliqueAdminProps {
   slug: string;
   sessionState: 'initiated' | 'configured' | 'finished';
+  setSessionState: (sessionState: 'initiated' | 'configured' | 'finished') => void;
   options: Option[];
   setOptions: (options: Option[]) => void;
   votingTokens: Token[];
+  setIsLoading: (isLoading: boolean) => void;
   isLoading: boolean;
   error: string;
+  setError: (error: string) => void;
   configureSession: () => Promise<void>;
   closeVoting: () => Promise<void>;
   minVotes?: number;
@@ -45,20 +47,48 @@ interface CliqueAdminProps {
 export function CliqueAdmin({
   slug,
   sessionState,
+  setSessionState,
   options,
   setOptions,
   votingTokens,
   isLoading,
+  setIsLoading,
   error,
+  setError,
   configureSession,
-  closeVoting,
   minVotes,
   maxVotes,
   onMinVotesChange,
   onMaxVotesChange,
   adminPassword,
 }: CliqueAdminProps) {
-  const router = useRouter();
+
+  const closeVoting = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const authToken = getStoredToken(slug);
+      const response = await fetch(`/api/sessions/${slug}/close`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to close voting');
+      }
+
+      setSessionState('finished');
+    } catch (error) {
+      console.error('Error closing voting:', error);
+      setError('Failed to close voting');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const votingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/session/${slug}`;
 
@@ -111,17 +141,13 @@ export function CliqueAdmin({
             url={votingUrl}
           />
 
-          <OptionsList options={options} />
-
           <TokenList
             tokens={parseVotingTokens(votingTokens)}
             votingUrl={votingUrl}
           />
 
-          <CliqueResults slug={slug} adminPassword={adminPassword} />
-
-          <Box textAlign="center">
-            {sessionState === "configured" && (
+          {sessionState === "configured" && (
+            <Box textAlign="center">
               <Button
                 colorScheme="blue"
                 size="lg"
@@ -133,18 +159,12 @@ export function CliqueAdmin({
               >
                 Close Voting & Show Results
               </Button>
-            )}
+            </Box>
+          )}
 
-            {sessionState === 'finished' && (
-              <Button
-                colorScheme="blue"
-                size="lg"
-                onClick={() => router.push(`/session/${slug}`)}
-              >
-                View Results
-              </Button>
-            )}
-          </Box>
+          {sessionState === 'finished' && (
+            <CliqueResults slug={slug} adminPassword={adminPassword} />
+          )}
         </VStack>
       )}
     </VStack>
