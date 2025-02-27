@@ -81,6 +81,7 @@ export default function SessionPage() {
       const decodedToken = decodeURIComponent(tokenFromUrl);
       verifyToken(decodedToken);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isVerified, isVoted, sessionState]);
 
   const verifyToken = async (tokenValue: string) => {
