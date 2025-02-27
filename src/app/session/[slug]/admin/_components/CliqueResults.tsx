@@ -15,6 +15,7 @@ import {
 } from '@chakra-ui/react';
 import { getStoredToken } from '@/lib/auth';
 import { decrypt } from '@/lib/crypto';
+import { computeCliques, type Cliques, type Votes } from '@/utils/cliques';
 
 type Props = {
     slug: string;
@@ -59,6 +60,7 @@ export function CliqueResults({ slug, adminPassword }: Props) {
 
             const data = await cliqueResultResponse.json();
             const decryptedVotes = await decryptCliqueData(data, votingTokens.tokens, adminPassword);
+            prettyPrintCliqueData(decryptedVotes);
             const result = computeCliques(decryptedVotes)
             setResult(result);
             setError("")
@@ -193,55 +195,6 @@ export function CliqueResults({ slug, adminPassword }: Props) {
     );
 }
 
-type Votes = Record<string, {
-    label: string;
-    weight: number;
-}>
-
-type Cliques = {
-    largestMutualGroup: {
-        labels: string[];
-        weight: number;
-    };
-    execludedLabelsMutual: {
-        label: string;
-        votesCount: number;
-        weight: number;
-    }[];
-    execludedLabelsAll: {
-        label: string;
-        votesCount: number;
-        weight: number;
-    }[];
-}
-
-function computeCliques(votes: Votes): Cliques {
-    return {
-        largestMutualGroup: {
-            labels: ['Mayla', 'Boda'],
-            weight: 250,
-        },
-        execludedLabelsMutual: [{
-            label: 'Ashraf',
-            votesCount: 5,
-            weight: 35,
-        }, {
-            label: 'Gamal',
-            votesCount: 6,
-            weight: 14,
-        }],
-        execludedLabelsAll: [{
-            label: 'Gamal',
-            votesCount: 10,
-            weight: 53,
-        }, {
-            label: 'Ashraf',
-            votesCount: 7,
-            weight: 50,
-        }],
-    }
-}
-
 type VotingToken = {
     token: string;
     salt: string;
@@ -268,4 +221,16 @@ async function decryptCliqueData(encryptedVotes: Votes, votingTokens: VotingToke
     }
 
     return decryptedVote;
+}
+
+function prettyPrintCliqueData(votes: Votes): void {
+    const prettyVotes: Record<string, string[]> = {};
+
+    for (const [key, value] of Object.entries(votes)) {
+        const sortedValue = value.sort((a, b) => b.weight - a.weight);
+        prettyVotes[key] = sortedValue.map(v => `${v.label} - ${v.weight}`);
+    }
+
+    console.log('@@@ DecryptedVotes:');
+    console.table(prettyVotes);
 }
