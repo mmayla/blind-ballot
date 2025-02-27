@@ -14,6 +14,7 @@ import {
     Spinner
 } from '@chakra-ui/react';
 import { getStoredToken } from '@/lib/auth';
+import { decrypt } from '@/lib/crypto';
 
 type Props = {
     slug: string;
@@ -29,7 +30,8 @@ export function CliqueResults({ slug, adminPassword }: Props) {
         try {
             setLoading(true);
             const authToken = getStoredToken(slug);
-            const response = await fetch(`/api/sessions/${slug}/clique-results`, {
+
+            const votingTokensResponse = await fetch(`/api/sessions/${slug}/tokens`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -37,12 +39,27 @@ export function CliqueResults({ slug, adminPassword }: Props) {
                 },
             });
 
-            if (!response.ok) {
+            if (!votingTokensResponse.ok) {
+                throw new Error('Failed to fetch voting tokens');
+            }
+
+            const votingTokens = await votingTokensResponse.json();
+
+            const cliqueResultResponse = await fetch(`/api/sessions/${slug}/clique-results`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`,
+                },
+            });
+
+            if (!cliqueResultResponse.ok) {
                 throw new Error('Failed to fetch results');
             }
 
-            const data = await response.json();
-            const result = computeCliques(data)
+            const data = await cliqueResultResponse.json();
+            const decryptedVotes = await decryptCliqueData(data, votingTokens.tokens, adminPassword);
+            const result = computeCliques(decryptedVotes)
             setResult(result);
             setError("")
         } catch (error) {
@@ -51,7 +68,7 @@ export function CliqueResults({ slug, adminPassword }: Props) {
         } finally {
             setLoading(false);
         }
-    }, [slug]);
+    }, [slug, adminPassword]);
 
     useEffect(() => {
         fetchCliqueResults();
@@ -223,4 +240,32 @@ function computeCliques(votes: Votes): Cliques {
             weight: 50,
         }],
     }
+}
+
+type VotingToken = {
+    token: string;
+    salt: string;
+    iv: string;
+}
+
+async function decryptCliqueData(encryptedVotes: Votes, votingTokens: VotingToken[], decryptionKey: string): Promise<Votes> {
+    const decryptedVote: Votes = {};
+
+    for (const [key, value] of Object.entries(encryptedVotes)) {
+        const token = votingTokens.find((votingToken) => votingToken.token === key);
+
+        if (!token) {
+            throw new Error(`Token ${key} not found`);
+        }
+
+        const decryptedKey = await decrypt(token.token, token.iv, token.salt, decryptionKey);
+        const [, label] = decryptedKey.split(':');
+
+        if (!decryptedKey) {
+            throw new Error(`Failed to decrypt key for token ${key}`);
+        }
+        decryptedVote[label] = value;
+    }
+
+    return decryptedVote;
 }
