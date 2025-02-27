@@ -8,12 +8,12 @@ export type Cliques = {
         labels: string[];
         weight: number;
     };
-    execludedLabelsMutual: {
+    excludedLabelsMutual: {
         label: string;
         votesCount: number;
         weight: number;
     }[];
-    execludedLabelsAll: {
+    excludedLabelsAll: {
         label: string;
         votesCount: number;
         weight: number;
@@ -26,8 +26,8 @@ export function computeCliques(votes: Votes): Cliques {
     if (voters.length === 0) {
         return {
             largestMutualGroup: { labels: [], weight: 0 },
-            execludedLabelsMutual: [],
-            execludedLabelsAll: []
+            excludedLabelsMutual: [],
+            excludedLabelsAll: []
         };
     }
 
@@ -39,17 +39,11 @@ export function computeCliques(votes: Votes): Cliques {
         voteGraph[voter] = {};
         const voteData = votes[voter];
 
-        if (voteData && typeof voteData === 'object') {
-            // If voteData has a weight property directly
-            if ('weight' in voteData && typeof voteData.weight === 'number') {
-                // Handle case where voteData is a single vote with weight
-                voteGraph[voter][voteData.label] = voteData.weight;
-            } else {
-                // Handle case where voteData is a map of labels to weights
-                for (const [votedFor, weight] of Object.entries(voteData)) {
-                    if (typeof weight === 'number') {
-                        voteGraph[voter][votedFor] = weight;
-                    }
+        if (Array.isArray(voteData)) {
+            // Process array of votes
+            for (const vote of voteData) {
+                if (vote && typeof vote === 'object' && 'label' in vote && 'weight' in vote) {
+                    voteGraph[voter][vote.label] = vote.weight;
                 }
             }
         }
@@ -163,14 +157,14 @@ export function computeCliques(votes: Votes): Cliques {
             labels: mutualGroup,
             weight: mutualGroupWeight
         },
-        execludedLabelsMutual: Object.entries(mutualGroupVotes)
+        excludedLabelsMutual: Object.entries(mutualGroupVotes)
             .map(([label, { count, weight }]) => ({
                 label,
                 votesCount: count,
                 weight
             }))
             .sort((a, b) => b.weight - a.weight),
-        execludedLabelsAll: Object.entries(allVotes)
+        excludedLabelsAll: Object.entries(allVotes)
             .map(([label, { count, weight }]) => ({
                 label,
                 votesCount: count,

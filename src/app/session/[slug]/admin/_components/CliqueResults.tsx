@@ -125,10 +125,10 @@ export function CliqueResults({ slug, adminPassword }: Props) {
                             </Card.Root>
                         </Box>
 
-                        {result.execludedLabelsMutual.length > 0 && (
+                        {result.excludedLabelsMutual.length > 0 && (
                             <Box>
                                 <Heading size="sm" mb={3}>
-                                    Excluded from Mutual Group
+                                    Excluded Names with Weighted Votes of Mutual Group
                                 </Heading>
                                 <Box>
                                     <Table.Root size="sm" variant="line">
@@ -140,7 +140,7 @@ export function CliqueResults({ slug, adminPassword }: Props) {
                                             </Table.Row>
                                         </Table.Header>
                                         <Table.Body>
-                                            {result.execludedLabelsMutual.map((item, index) => (
+                                            {result.excludedLabelsMutual.map((item, index) => (
                                                 <Table.Row key={index}>
                                                     <Table.Cell>{item.label}</Table.Cell>
                                                     <Table.Cell>{item.votesCount}</Table.Cell>
@@ -153,10 +153,10 @@ export function CliqueResults({ slug, adminPassword }: Props) {
                             </Box>
                         )}
 
-                        {result.execludedLabelsAll.length > 0 && (
+                        {result.excludedLabelsAll.length > 0 && (
                             <Box>
                                 <Heading size="sm" mb={3}>
-                                    Excluded from All Groups
+                                    Excluded Names with Weighted Votes of All Participants
                                 </Heading>
                                 <Box>
                                     <Table.Root size="sm" variant="line">
@@ -168,7 +168,7 @@ export function CliqueResults({ slug, adminPassword }: Props) {
                                             </Table.Row>
                                         </Table.Header>
                                         <Table.Body>
-                                            {result.execludedLabelsAll.map((item, index) => (
+                                            {result.excludedLabelsAll.map((item, index) => (
                                                 <Table.Row key={index}>
                                                     <Table.Cell>{item.label}</Table.Cell>
                                                     <Table.Cell>{item.votesCount}</Table.Cell>
