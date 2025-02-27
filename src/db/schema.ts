@@ -49,6 +49,6 @@ export const cliqueVotes = sqliteTable('clique_votes', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   tokenId: integer('token_id').references(() => tokens.id),
   optionId: integer('option_id').references(() => options.id),
-  weight: integer('weight').notNull(),
+  order: integer('order').notNull(),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
 });
