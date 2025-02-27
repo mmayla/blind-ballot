@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { tokens, cliqueVotes } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { MAX_ORDER, MIN_ORDER } from '@/constants';
 
 type SubmittedVote = {
   id: number;
   label: string;
   order: number;
 }
-
-const MIN_ORDER = 0;
-const MAX_ORDER = 3;
 
 export async function POST(request: NextRequest, props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
