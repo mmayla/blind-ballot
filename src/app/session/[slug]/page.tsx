@@ -8,6 +8,7 @@ import { TokenVerification } from './_components/TokenVerification';
 import { ApprovalVotingForm } from './_components/ApprovalVotingForm';
 import { SessionLayout } from './_components/SessionLayout';
 import { CliqueVotingForm, TieredOption } from './_components/CliqueVotingForm';
+import { shuffleArray } from '@/utils/array';
 
 interface Option {
   id: number;
@@ -51,7 +52,8 @@ export default function SessionPage() {
         const optionsResponse = await fetch(`/api/sessions/${slug}/options`);
         if (optionsResponse.ok) {
           const data = await optionsResponse.json();
-          setOptions(data.options || []);
+          const shuffledOptions = shuffleArray<Option>(data.options || []);
+          setOptions(shuffledOptions);
           setSessionState('configured');
         }
 
