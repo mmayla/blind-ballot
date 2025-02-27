@@ -33,143 +33,204 @@ export function computeCliques(votes: Votes): Cliques {
 
     // 2. Create a simplified representation of votes
     // For each voter, we track who they voted for and with what weight
-    const voteGraph: Record<string, Record<string, number>> = {};
-
+    const selectionMap: Record<string, Record<string, number>> = {};
+    
     for (const voter of voters) {
-        voteGraph[voter] = {};
+        selectionMap[voter] = {};
         const voteData = votes[voter];
-
+        
         if (Array.isArray(voteData)) {
             // Process array of votes
             for (const vote of voteData) {
                 if (vote && typeof vote === 'object' && 'label' in vote && 'weight' in vote) {
-                    voteGraph[voter][vote.label] = vote.weight;
+                    selectionMap[voter][vote.label] = vote.weight;
                 }
             }
         }
     }
 
-    // 3. Find the mutual group (people who voted for each other)
-    // Start with all voters and remove those who don't have mutual votes
-    let mutualGroup = [...voters];
-    let changed = true;
-
-    // Keep refining the mutual group until it stabilizes
-    while (changed) {
-        changed = false;
-
-        for (let i = 0; i < mutualGroup.length; i++) {
-            const voter = mutualGroup[i];
-
-            // Check if this voter has voted for everyone else in the mutual group
-            for (const otherVoter of mutualGroup) {
-                if (voter !== otherVoter &&
-                    (!voteGraph[voter]?.[otherVoter] || !voteGraph[otherVoter]?.[voter])) {
-                    // Remove this voter from the mutual group
-                    mutualGroup.splice(i, 1);
-                    i--; // Adjust index after removal
-                    changed = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    // 4. If mutual group is too small, use a different approach
-    // Find the top voted people instead
-    if (mutualGroup.length < 2) {
-        // Calculate total votes and weights for each person
-        const voteCounts: Record<string, { count: number, weight: number }> = {};
-
-        for (const voter of voters) {
-            voteCounts[voter] = { count: 0, weight: 0 };
-        }
-
-        for (const voter of voters) {
-            for (const [votedFor, weight] of Object.entries(voteGraph[voter] || {})) {
-                if (voteCounts[votedFor]) {
-                    voteCounts[votedFor].count += 1;
-                    voteCounts[votedFor].weight += weight;
-                }
-            }
-        }
-
-        // Sort by weight and then by count
-        mutualGroup = Object.entries(voteCounts)
-            .sort((a, b) => {
-                // First by weight
-                if (b[1].weight !== a[1].weight) {
-                    return b[1].weight - a[1].weight;
-                }
-                // Then by count
-                return b[1].count - a[1].count;
-            })
-            .slice(0, Math.min(3, voters.length)) // Take top 3 or fewer
-            .map(([voter]) => voter);
-    }
-
-    // 5. Calculate the total weight of the mutual group
-    let mutualGroupWeight = 0;
-    for (const voter of mutualGroup) {
-        for (const otherVoter of mutualGroup) {
-            if (voter !== otherVoter) {
-                mutualGroupWeight += voteGraph[voter]?.[otherVoter] || 0;
-            }
-        }
-    }
-
-    // 6. Find excluded voters from the mutual group
-    const excludedVoters = voters.filter(voter => !mutualGroup.includes(voter));
-
-    // 7. Calculate votes from mutual group for excluded voters
-    const mutualGroupVotes: Record<string, { count: number, weight: number }> = {};
-
-    for (const excluded of excludedVoters) {
-        mutualGroupVotes[excluded] = { count: 0, weight: 0 };
-
-        for (const mutual of mutualGroup) {
-            const weight = voteGraph[mutual]?.[excluded] || 0;
-            if (weight > 0) {
-                mutualGroupVotes[excluded].count += 1;
-                mutualGroupVotes[excluded].weight += weight;
-            }
-        }
-    }
-
-    // 8. Calculate votes from all voters for excluded voters
-    const allVotes: Record<string, { count: number, weight: number }> = {};
-
-    for (const excluded of excludedVoters) {
-        allVotes[excluded] = { count: 0, weight: 0 };
-
-        for (const voter of voters) {
-            const weight = voteGraph[voter]?.[excluded] || 0;
-            if (weight > 0) {
-                allVotes[excluded].count += 1;
-                allVotes[excluded].weight += weight;
-            }
-        }
-    }
-
-    // 9. Format the results according to the required interface
+    // 3. Find all cliques and their weights using the same algorithm as the Python code
+    const allCliques = findAllCliques(selectionMap);
+    
+    // 4. Find the largest weighted clique
+    const [largestGroup, largestWeight] = findLargestWeightedClique(allCliques);
+    
+    // 5. Find excluded names with weighted votes of mutual group
+    const excludedVotesMutual = findExcludedNamesWithVotesOfMutualGroup(selectionMap, largestGroup);
+    
+    // 6. Find excluded names with weighted votes of all participants
+    const excludedVotesAll = findExcludedNamesWithVotesOfAll(selectionMap, largestGroup);
+    
+    // 7. Format the results according to the required interface
     return {
         largestMutualGroup: {
-            labels: mutualGroup,
-            weight: mutualGroupWeight
+            labels: largestGroup,
+            weight: largestWeight
         },
-        excludedLabelsMutual: Object.entries(mutualGroupVotes)
-            .map(([label, { count, weight }]) => ({
-                label,
-                votesCount: count,
-                weight
-            }))
-            .sort((a, b) => b.weight - a.weight),
-        excludedLabelsAll: Object.entries(allVotes)
-            .map(([label, { count, weight }]) => ({
-                label,
-                votesCount: count,
-                weight
-            }))
-            .sort((a, b) => b.weight - a.weight)
+        excludedLabelsMutual: excludedVotesMutual.map(([label, votesCount, weight]) => ({
+            label,
+            votesCount,
+            weight
+        })),
+        excludedLabelsAll: excludedVotesAll.map(([label, votesCount, weight]) => ({
+            label,
+            votesCount,
+            weight
+        }))
     };
+}
+
+// Helper function to find all cliques and their weights
+function findAllCliques(selectionMap: Record<string, Record<string, number>>): [string[], number][] {
+    const graph: Record<string, Set<string>> = {};
+    
+    // Build the graph
+    for (const [person, choices] of Object.entries(selectionMap)) {
+        graph[person] = new Set(Object.keys(choices));
+    }
+    
+    const allCliques: [string[], number][] = [];
+    
+    // Calculate weight of a clique
+    function calculateWeight(clique: string[]): number {
+        let weight = 0;
+        for (const person of clique) {
+            for (const other of clique) {
+                if (other !== person) {
+                    weight += selectionMap[person]?.[other] || 0;
+                }
+            }
+        }
+        return weight;
+    }
+    
+    // Generate all possible combinations of a specific size
+    function combinations<T>(array: T[], size: number): T[][] {
+        if (size === 0) return [[]];
+        if (array.length === 0) return [];
+        
+        const result: T[][] = [];
+        const restCombinations = combinations(array.slice(1), size - 1);
+        
+        for (const combination of restCombinations) {
+            result.push([array[0], ...combination]);
+        }
+        
+        result.push(...combinations(array.slice(1), size));
+        
+        return result;
+    }
+    
+    // Check if all members of a subset form a clique
+    function isClique(subset: string[]): boolean {
+        for (let i = 0; i < subset.length; i++) {
+            for (let j = i + 1; j < subset.length; j++) {
+                const person = subset[i];
+                const other = subset[j];
+                
+                // Check if person has other in their selections AND other has person in their selections
+                if (!graph[person]?.has(other) || !graph[other]?.has(person)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    const allPeople = Object.keys(graph);
+    
+    // Find cliques of size 2 or larger
+    for (let size = 2; size <= allPeople.length; size++) {
+        const subsets = combinations(allPeople, size);
+        
+        for (const subset of subsets) {
+            if (isClique(subset)) {
+                const weight = calculateWeight(subset);
+                allCliques.push([subset, weight]);
+            }
+        }
+    }
+    
+    // Sort by size (descending) and then by weight (descending)
+    return allCliques.sort((a, b) => {
+        // First compare by size (length of the clique)
+        const sizeComparison = b[0].length - a[0].length;
+        if (sizeComparison !== 0) {
+            return sizeComparison;
+        }
+        // If sizes are equal, compare by weight
+        return b[1] - a[1];
+    });
+}
+
+// Helper function to find the largest weighted clique
+function findLargestWeightedClique(allCliques: [string[], number][]): [string[], number] {
+    return allCliques.length > 0 ? allCliques[0] : [[], 0];
+}
+
+// Helper function to find excluded names with weighted votes of mutual group
+function findExcludedNamesWithVotesOfMutualGroup(
+    selectionMap: Record<string, Record<string, number>>,
+    largestGroup: string[]
+): [string, number, number][] {
+    const excludedNames = new Set(
+        Object.keys(selectionMap).filter(name => !largestGroup.includes(name))
+    );
+    
+    const voteCounts: Record<string, [number, number]> = {};
+    
+    // Initialize vote counts
+    for (const name of excludedNames) {
+        voteCounts[name] = [0, 0]; // [vote count, total weight]
+    }
+    
+    // Count votes from the largest group
+    for (const person of largestGroup) {
+        const votes = selectionMap[person] || {};
+        
+        for (const [vote, weight] of Object.entries(votes)) {
+            if (excludedNames.has(vote)) {
+                voteCounts[vote][0] += 1; // Increment vote count
+                voteCounts[vote][1] += weight; // Add weight
+            }
+        }
+    }
+    
+    // Convert to array and sort by weight (descending)
+    return Object.entries(voteCounts)
+        .map(([name, [count, weight]]) => [name, count, weight] as [string, number, number])
+        .sort((a, b) => b[2] - a[2]); // Sort by weight descending
+}
+
+// Helper function to find excluded names with weighted votes of all participants
+function findExcludedNamesWithVotesOfAll(
+    selectionMap: Record<string, Record<string, number>>,
+    largestGroup: string[]
+): [string, number, number][] {
+    const allNames = new Set(Object.keys(selectionMap));
+    const excludedNames = new Set(
+        Array.from(allNames).filter(name => !largestGroup.includes(name))
+    );
+    
+    const voteCounts: Record<string, [number, number]> = {};
+    
+    // Initialize vote counts
+    for (const name of excludedNames) {
+        voteCounts[name] = [0, 0]; // [vote count, total weight]
+    }
+    
+    // Count votes from all participants
+    for (const [person, votes] of Object.entries(selectionMap)) {
+        for (const [vote, weight] of Object.entries(votes)) {
+            if (excludedNames.has(vote)) {
+                voteCounts[vote][0] += 1; // Increment vote count
+                voteCounts[vote][1] += weight; // Add weight
+            }
+        }
+    }
+    
+    // Convert to array and sort by weight (descending)
+    return Object.entries(voteCounts)
+        .map(([name, [count, weight]]) => [name, count, weight] as [string, number, number])
+        .sort((a, b) => b[2] - a[2]); // Sort by weight descending
 }
