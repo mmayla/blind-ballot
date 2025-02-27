@@ -176,6 +176,11 @@ export function CliqueVotingForm({
                         Please rank between {minVotes} and {maxVotes} options by dragging them to the appropriate tier.
                     </Text>
 
+                    {/* TODO: temporary message, remove */}
+                    <Text direction="rtl" fontWeight="bold">
+                        الرجاء التصويت لنفسك ولأسرة طه في خانة موافق بشدة
+                    </Text>
+
                     <Box>
                         <Text fontWeight="bold" mb={2}>
                             Ranked: {tieredOptions.filter(option => option.order !== 0).length}/{maxVotes}
