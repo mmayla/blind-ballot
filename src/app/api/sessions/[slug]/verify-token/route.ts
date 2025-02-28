@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { sessions, tokens } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest, props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
@@ -29,10 +29,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ slug
     }
 
     const tokenRecord = await db.query.tokens.findFirst({
-      where: and(
-        eq(tokens.token, token),
-        eq(tokens.used, 0)
-      )
+      where: eq(tokens.token, token)
     });
 
     if (!tokenRecord) {

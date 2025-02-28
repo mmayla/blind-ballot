@@ -76,13 +76,18 @@ export async function POST(request: NextRequest, props: { params: Promise<{ slug
         where: (tokens, { eq }) => eq(tokens.token, token)
       });
 
-      if (!votingToken || votingToken.sessionId !== session.id || votingToken.used) {
+      if (!votingToken || votingToken.sessionId !== session.id) {
         throw new Error('Invalid or already used token');
       }
 
       const validOptionIds = sessionOptions.map(opt => opt.id);
       if (!votes.every(vote => validOptionIds.includes(vote.id))) {
         throw new Error('Invalid option selected');
+      }
+
+      if (votingToken.used) {
+        // delete all old votes for this token
+        await tx.delete(cliqueVotes).where(eq(cliqueVotes.token, token));
       }
 
       await tx.insert(cliqueVotes)
