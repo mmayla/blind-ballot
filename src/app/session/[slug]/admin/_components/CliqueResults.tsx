@@ -59,7 +59,7 @@ export function CliqueResults({ slug, adminPassword }: Props) {
 
             const data = await cliqueResultResponse.json();
             const decryptedVotes = await decryptCliqueData(data, votingTokens.tokens, adminPassword);
-            // prettyPrintCliqueData(decryptedVotes);
+            prettyPrintCliqueData(decryptedVotes);
             const result = computeCliques(decryptedVotes)
             setResult(result);
             setError("")
