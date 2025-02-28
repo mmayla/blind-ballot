@@ -54,7 +54,7 @@ const votingBallots: TierConfig[] = [{
     tierLabel: "لا يوجد لدي مانع"
 }, {
     tierOrder: 0,
-    tierLabel: "غير موافق",
+    tierLabel: "الاختيارات",
 }]
 
 export function CliqueVotingForm({
