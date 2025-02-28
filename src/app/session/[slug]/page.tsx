@@ -39,6 +39,16 @@ export default function SessionPage() {
   useEffect(() => {
     const checkSessionStatus = async () => {
       try {
+        const sessionResponse = await fetch(`/api/sessions/${slug}`);
+        if (sessionResponse.ok) {
+          const data = await sessionResponse.json();
+          if (data.session) {
+            setSessionType(data.session.type);
+            setMinVotes(data.session.minVotes ?? 2);
+            setMaxVotes(data.session.maxVotes ?? undefined);
+          }
+        }
+
         // First try to get session results
         const resultsResponse = await fetch(`/api/sessions/${slug}/approval-results`);
         if (resultsResponse.ok) {
@@ -55,16 +65,6 @@ export default function SessionPage() {
           const shuffledOptions = shuffleArray<Option>(data.options || []);
           setOptions(shuffledOptions);
           setSessionState('configured');
-        }
-
-        const sessionResponse = await fetch(`/api/sessions/${slug}`);
-        if (sessionResponse.ok) {
-          const data = await sessionResponse.json();
-          if (data.session) {
-            setSessionType(data.session.type);
-            setMinVotes(data.session.minVotes ?? 2);
-            setMaxVotes(data.session.maxVotes ?? undefined);
-          }
         }
       } catch (error) {
         console.error('Error checking session status:', error);
@@ -174,8 +174,20 @@ export default function SessionPage() {
     }
   }
 
-  if (sessionState === 'finished') {
+  if (sessionState === 'finished' && sessionType === 'approval') {
     return <Results results={results} />;
+  }
+
+  if (sessionState === 'finished' && sessionType === 'clique') {
+    return (
+      <SessionLayout title="Voting CLosed">
+        <Alert.Root status="success">
+          <Alert.Description>
+            Voting Session is closed
+          </Alert.Description>
+        </Alert.Root>
+      </SessionLayout>
+    );
   }
 
   if (isVoted) {
