@@ -68,6 +68,7 @@ export function CliqueVotingForm({
     const [tieredOptions, setTieredOptions] = useState<TieredOption[]>([]);
     const [activeId, setActiveId] = useState<string | number | null>(null);
     const [validationError, setValidationError] = useState<string>('');
+    const [isDragging, setIsDragging] = useState(false);
 
     useEffect(() => {
         setTieredOptions(
@@ -78,20 +79,50 @@ export function CliqueVotingForm({
         );
     }, [options]);
 
+    // Configure sensors with appropriate activation constraints
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            // Require a more intentional drag to begin
+            activationConstraint: {
+                distance: 8, // 8px of movement required before drag starts
+            },
+        }),
+        useSensor(TouchSensor, {
+            // Add a delay and distance constraint for touch devices
+            activationConstraint: {
+                delay: 250, // ms delay before drag starts
+                tolerance: 5, // px tolerance before drag starts
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         }),
-        useSensor(TouchSensor),
     );
+
+    // Prevent page scrolling when dragging
+    useEffect(() => {
+        if (!isDragging) return;
+        
+        // Save the current body style
+        const originalStyle = window.getComputedStyle(document.body).overflow;
+        
+        // Prevent scrolling on the body
+        document.body.style.overflow = 'hidden';
+        
+        // Restore original style when dragging stops
+        return () => {
+            document.body.style.overflow = originalStyle;
+        };
+    }, [isDragging]);
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveId(event.active.id as string);
+        setIsDragging(true);
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
         setActiveId(null);
+        setIsDragging(false);
         const { active, over } = event;
 
         if (!over) return;
