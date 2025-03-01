@@ -18,6 +18,11 @@ export type Cliques = {
         votesCount: number;
         weight: number;
     }[];
+    votesForAll: {
+        label: string;
+        votesCount: number;
+        weight: number;
+    }[];
 }
 
 export function computeCliques(votes: Votes): Cliques {
@@ -27,7 +32,8 @@ export function computeCliques(votes: Votes): Cliques {
         return {
             largestMutualGroup: { labels: [], weight: 0 },
             excludedLabelsMutual: [],
-            excludedLabelsAll: []
+            excludedLabelsAll: [],
+            votesForAll: [],
         };
     }
 
@@ -61,7 +67,10 @@ export function computeCliques(votes: Votes): Cliques {
     // 6. Find excluded names with weighted votes of all participants
     const excludedVotesAll = findExcludedNamesWithVotesOfAll(selectionMap, largestGroup);
 
-    // 7. Format the results according to the required interface
+    // 7. Find votes for all people from all participants
+    const votesForAllPeople = findVotesForAllPeople(selectionMap);
+
+    // 8. Format the results according to the required interface
     return {
         largestMutualGroup: {
             labels: largestGroup,
@@ -73,6 +82,11 @@ export function computeCliques(votes: Votes): Cliques {
             weight
         })),
         excludedLabelsAll: excludedVotesAll.map(([label, votesCount, weight]) => ({
+            label,
+            votesCount,
+            weight
+        })),
+        votesForAll: votesForAllPeople.map(([label, votesCount, weight]) => ({
             label,
             votesCount,
             weight
@@ -224,6 +238,34 @@ function findExcludedNamesWithVotesOfAll(
     for (const [person, votes] of Object.entries(selectionMap)) {
         for (const [vote, weight] of Object.entries(votes)) {
             if (excludedNames.has(vote)) {
+                voteCounts[vote][0] += 1; // Increment vote count
+                voteCounts[vote][1] += weight; // Add weight
+            }
+        }
+    }
+
+    // Convert to array and sort by weight (descending)
+    return Object.entries(voteCounts)
+        .map(([name, [count, weight]]) => [name, count, weight] as [string, number, number])
+        .sort((a, b) => b[2] - a[2]); // Sort by weight descending
+}
+
+// Helper function to find votes for all people from all participants
+function findVotesForAllPeople(
+    selectionMap: Record<string, Record<string, number>>
+): [string, number, number][] {
+    const allNames = new Set(Object.keys(selectionMap));
+    const voteCounts: Record<string, [number, number]> = {};
+
+    // Initialize vote counts for all people
+    for (const name of allNames) {
+        voteCounts[name] = [0, 0]; // [vote count, total weight]
+    }
+
+    // Count votes from all participants for all people
+    for (const [, votes] of Object.entries(selectionMap)) {
+        for (const [vote, weight] of Object.entries(votes)) {
+            if (allNames.has(vote)) {
                 voteCounts[vote][0] += 1; // Increment vote count
                 voteCounts[vote][1] += weight; // Add weight
             }

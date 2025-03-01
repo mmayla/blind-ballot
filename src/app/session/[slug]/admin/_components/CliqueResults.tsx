@@ -169,6 +169,34 @@ export function CliqueResults({ slug, adminPassword }: Props) {
                                     </Box>
                                 </Box>
                             )}
+
+                            {result.votesForAll.length > 0 && (
+                                <Box>
+                                    <Heading size="sm" mb={3}>
+                                        Votes for All Participants
+                                    </Heading>
+                                    <Box>
+                                        <Table.Root size="sm" variant="line">
+                                            <Table.Header bg="gray.100">
+                                                <Table.Row>
+                                                    <Table.ColumnHeader>Option</Table.ColumnHeader>
+                                                    <Table.ColumnHeader>Votes</Table.ColumnHeader>
+                                                    <Table.ColumnHeader>Weight</Table.ColumnHeader>
+                                                </Table.Row>
+                                            </Table.Header>
+                                            <Table.Body>
+                                                {result.votesForAll.map((item, index) => (
+                                                    <Table.Row key={index}>
+                                                        <Table.Cell>{item.label}</Table.Cell>
+                                                        <Table.Cell>{item.votesCount}</Table.Cell>
+                                                        <Table.Cell>{item.weight}</Table.Cell>
+                                                    </Table.Row>
+                                                ))}
+                                            </Table.Body>
+                                        </Table.Root>
+                                    </Box>
+                                </Box>
+                            )}
                         </VStack>
                     )}
 
