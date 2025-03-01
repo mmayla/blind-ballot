@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ slug
       where: eq(tokens.token, token)
     });
 
-    if (!tokenRecord) {
+    if (!tokenRecord || (session.type === 'approval' && tokenRecord.used === 1)) {
       return NextResponse.json(
         { error: 'Invalid or already used token' },
         { status: 400 }
